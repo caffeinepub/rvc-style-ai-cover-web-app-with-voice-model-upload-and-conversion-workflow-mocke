@@ -1,30 +1,100 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Surface backend conversion-job creation errors in Create Cover flow",
+  "title": "Rebuild Replicate voice conversion to use selected model output and robust playback",
   "requirements": [
     {
-      "id": "REQ-3",
-      "summary": "Preserve and display backend error messages (e.g., invalid voice ID) during Create Cover job creation, and ensure the form can be retried after failures.",
+      "id": "REQ-1",
+      "summary": "Rebuild client-side Replicate integration to reliably generate and save converted audio (never silently falling back to original audio).",
       "acceptanceCriteria": [
-        "If job creation fails due to invalid/empty target voice model ID, the UI shows an actionable English error message (e.g., includes the backend-provided reason such as invalid voice ID/unauthorized).",
-        "The Create Cover form remains usable after an error (no stuck loading state; user can reselect model and retry)."
+        "If Replicate is not configured (missing VITE_REPLICATE_API_TOKEN), the app must show a clear, user-facing error explaining what is missing and must not create a completed job with unconverted/original audio.",
+        "If Replicate conversion fails (API error, polling failure, invalid response), the app must show a clear, user-facing error and must not create a completed job containing unconverted/original audio.",
+        "The conversion request must be made using the voice model the user selected (not a hardcoded/default/undefined model input)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/actorErrorMessage.ts",
-          "operation": "create",
-          "description": "Add a small utility to extract a user-readable error message from backend/agent errors (prefer preserving backend-provided reason text, while stripping noisy prefixes when present)."
-        },
-        {
           "path": "frontend/src/hooks/useConversionJobs.ts",
           "operation": "modify",
-          "description": "Use the new error-message extraction utility to normalize errors from makeVoiceConversionJob so react-query toasts and thrown errors preserve backend-provided failure reasons (e.g., \"Invalid voice ID\"/\"Unauthorized\") instead of generic messages."
+          "description": "Remove the mock conversion fallback and restructure job creation so the backend job is created only after Replicate conversion succeeds; propagate clear user-facing errors when token is missing or conversion fails; ensure the selected model is always resolved and used for conversion input. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/services/voiceConversion.ts",
+          "operation": "modify",
+          "description": "Scrap and rebuild Replicate request/poll/download logic to hard-fail when VITE_REPLICATE_API_TOKEN is missing, validate required inputs (including selected model URL), and return converted audio bytes only after a successful conversion. Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/components/AudioUploadAndSubmit.tsx",
           "operation": "modify",
-          "description": "Update Create Cover submission error handling to display the extracted backend reason via InlineAlert, ensure mutation/loading state is resettable (e.g., clear upload progress and mutation error on retry), and keep the form interactive after a failed submission so the user can reselect a model and try again."
+          "description": "Update submit flow UI wiring to display clear conversion errors coming from the rebuilt conversion pipeline (no silent success state), and to reflect the updated progress/status callbacks. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Resolve the selected voice model from the backend and pass its ExternalBlob direct URL into the Replicate conversion call; only create jobs with the converted audio blob.",
+      "acceptanceCriteria": [
+        "When a user selects a model and submits audio, the frontend must resolve the selected model to a concrete model resource URL derived from the stored model blob (ExternalBlob.getDirectURL()), and use that URL in the conversion request.",
+        "If the selected model cannot be fetched / has no usable URL, the submit must fail with a clear error and must not create a job.",
+        "The created job in the backend must store the converted audio bytes as the completed job blob (i.e., preview/download uses the converted audio)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useConversionJobs.ts",
+          "operation": "modify",
+          "description": "Before starting conversion, fetch the selected model via the backend actor, derive the model resource URL via model.audio.getDirectURL(), and pass that URL into the Replicate conversion call; if missing/invalid, fail with a clear error and do not create the job; ensure the ExternalBlob sent to makeVoiceConversionJob is constructed from the converted bytes (not original). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/services/voiceConversion.ts",
+          "operation": "modify",
+          "description": "Require/consume the resolved model URL as the model input for Replicate conversion (no hardcoded/default/undefined model input). Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Rebuild completed-job audio preview to use Blob/ObjectURLs created from stored job bytes, with reliable play/stop behavior, cleanup, and UI error surfacing.",
+      "acceptanceCriteria": [
+        "Clicking “Preview” on a completed job must play audio that matches the job’s stored completed blob.",
+        "Stopping/starting preview must work reliably (second click stops, subsequent click restarts).",
+        "Any ObjectURLs created for preview must be revoked when no longer needed (on stop/end/unmount) to avoid leaks.",
+        "If playback fails, the UI must surface a user-facing error (not only console logs)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/JobStatusCard.tsx",
+          "operation": "modify",
+          "description": "Replace direct-URL preview with a robust preview implementation that downloads the completed ExternalBlob bytes, creates a Blob/ObjectURL, plays via a managed HTMLAudioElement, supports toggle stop/restart, revokes ObjectURLs on stop/end/unmount, and surfaces playback errors via visible UI (e.g., InlineAlert and/or toast). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/utils/downloadExternalBlob.ts",
+          "operation": "modify",
+          "description": "Align blob handling patterns with the new preview approach (ObjectURL lifecycle and error handling), ensuring utility behavior remains safe and consistent for audio downloads. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Harden Replicate request/response handling to support common output shapes, safe data conversions for large audio, and accurate UI status progression tied to polling states and post-download completion.",
+      "acceptanceCriteria": [
+        "The code must not rely on `btoa(String.fromCharCode(...bytes))` for arbitrary-sized audio (it must use a safe approach that does not overflow call stacks or corrupt data).",
+        "The implementation must correctly handle Replicate `output` fields that may be a string URL or a list of URLs and choose the correct audio URL to download.",
+        "Progress/status updates shown in the UI must reflect Replicate polling states (starting/processing/succeeded/failed) and transition to completion only after the converted audio has been downloaded and stored."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/services/voiceConversion.ts",
+          "operation": "modify",
+          "description": "Implement safe bytes-to-data-URL conversion via Blob/FileReader (or equivalent safe approach) instead of `btoa(String.fromCharCode(...))`; update response typing/handling to support `output` as string or list and select the appropriate audio URL; provide explicit status callbacks for polling phases and only report completion after the converted audio has been downloaded into bytes. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useConversionJobs.ts",
+          "operation": "modify",
+          "description": "Wire Replicate polling statuses into UI-facing progress/status updates (starting/processing/succeeded/failed), and only mark the mutation as successful after the converted audio bytes are downloaded and the job has been created in the backend; ensure failures do not create a job. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/AudioUploadAndSubmit.tsx",
+          "operation": "modify",
+          "description": "Update progress/status rendering to reflect Replicate polling states from the rebuilt conversion pipeline, and ensure the UI only shows success after the job is truly created with converted audio. Verify the component's usage instructions before implementing."
         }
       ]
     }

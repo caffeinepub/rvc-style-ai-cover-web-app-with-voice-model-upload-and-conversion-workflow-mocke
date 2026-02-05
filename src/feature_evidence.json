@@ -2,12 +2,54 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-ensure-the-frontend-correctly-surfaces-backend-conversion-failures-related-to-missing-invalid-model-ids-by-preserving-and-displaying-backend-error-messages-in-the-create-cover-flow",
-      "featureTitle": "Ensure the frontend correctly surfaces backend conversion failures related to missing/invalid model IDs by preserving and displaying backend error messages in the Create Cover flow.",
+      "featureId": "feature-scrap-and-rebuild-the-client-side-voice-conversion-integration-so-it-reliably-produces-and-saves-audio-that-uses-the-selected-voice-model-s-voice-no-silent-fallback-to-returning-the-original-audio",
+      "featureTitle": "Scrap and rebuild the client-side voice conversion integration so it reliably produces (and saves) audio that uses the selected voice model’s voice (no silent fallback to returning the original audio).",
       "files": [
         "frontend/src/components/AudioUploadAndSubmit.tsx",
         "frontend/src/hooks/useConversionJobs.ts",
-        "frontend/src/utils/actorErrorMessage.ts"
+        "frontend/src/services/voiceConversion.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-conversion-pipeline-to-pass-the-selected-voice-model-s-actual-data-url-into-the-replicate-conversion-call-by-retrieving-the-selected-model-from-the-backend-and-using-its-externalblob-direct-url-as-the-model-input-for-conversion",
+      "featureTitle": "Update the conversion pipeline to pass the selected voice model’s actual data URL into the Replicate conversion call by retrieving the selected model from the backend and using its ExternalBlob direct URL as the model input for conversion.",
+      "files": [
+        "frontend/src/hooks/useConversionJobs.ts",
+        "frontend/src/services/voiceConversion.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-rebuild-frontend-audio-playback-for-completed-jobs-to-be-robust-across-browsers-by-creating-a-blob-objecturl-for-preview-instead-of-relying-solely-on-playing-the-externalblob-direct-url-and-ensure-playback-state-and-cleanup-are-handled-correctly",
+      "featureTitle": "Rebuild frontend audio playback for completed jobs to be robust across browsers by creating a Blob/ObjectURL for preview (instead of relying solely on playing the ExternalBlob direct URL), and ensure playback state and cleanup are handled correctly.",
+      "files": [
+        "frontend/src/components/JobStatusCard.tsx",
+        "frontend/src/utils/downloadExternalBlob.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -20,6 +62,28 @@
       ],
       "testIds": [
         "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-replace-the-current-replicate-request-response-handling-with-a-robust-implementation-that-can-handle-common-replicate-output-shapes-and-avoids-unsafe-base64-conversions-that-can-corrupt-large-audio-files",
+      "featureTitle": "Replace the current Replicate request/response handling with a robust implementation that can handle common Replicate output shapes and avoids unsafe base64 conversions that can corrupt large audio files.",
+      "files": [
+        "frontend/src/components/AudioUploadAndSubmit.tsx",
+        "frontend/src/hooks/useConversionJobs.ts",
+        "frontend/src/services/voiceConversion.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
       ],
       "confidence": "high"
     }

@@ -6,16 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Music, Loader2 } from 'lucide-react';
+import { Music, Loader2, Sparkles } from 'lucide-react';
 import InlineAlert from './InlineAlert';
 import { fileToBytes } from '../utils/fileToBytes';
-import { extractActorErrorMessage } from '../utils/actorErrorMessage';
 
 export default function AudioUploadAndSubmit() {
   const [selectedModelId, setSelectedModelId] = useState('');
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<string>('');
 
   const createJobMutation = useCreateConversionJob();
 
@@ -24,7 +24,8 @@ export default function AudioUploadAndSubmit() {
     if (file) {
       setAudioFile(file);
       setError(null);
-      // Clear any previous mutation errors when user changes file
+      setProcessingStatus('');
+      setUploadProgress(0);
       if (createJobMutation.isError) {
         createJobMutation.reset();
       }
@@ -34,7 +35,8 @@ export default function AudioUploadAndSubmit() {
   const handleModelChange = (modelId: string) => {
     setSelectedModelId(modelId);
     setError(null);
-    // Clear any previous mutation errors when user changes model
+    setProcessingStatus('');
+    setUploadProgress(0);
     if (createJobMutation.isError) {
       createJobMutation.reset();
     }
@@ -44,6 +46,7 @@ export default function AudioUploadAndSubmit() {
     e.preventDefault();
     setError(null);
     setUploadProgress(0);
+    setProcessingStatus('');
 
     if (!selectedModelId) {
       setError('Please select a voice model');
@@ -57,26 +60,32 @@ export default function AudioUploadAndSubmit() {
 
     try {
       const bytes = await fileToBytes(audioFile);
+      
       await createJobMutation.mutateAsync({
         modelId: selectedModelId,
         audioFile: bytes,
-        onProgress: setUploadProgress,
+        onProgress: (percentage) => {
+          setUploadProgress(percentage);
+        },
+        onStatus: (status) => {
+          setProcessingStatus(status);
+        },
       });
 
       // Reset form on success
       setSelectedModelId('');
       setAudioFile(null);
       setUploadProgress(0);
+      setProcessingStatus('');
 
       // Reset file input
       const fileInput = document.getElementById('audio-file') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
     } catch (err: unknown) {
-      // Extract clean error message from backend
-      const cleanMessage = extractActorErrorMessage(err);
-      setError(cleanMessage);
-      // Reset upload progress on error so user can retry
+      const errorMessage = err instanceof Error ? err.message : 'Voice conversion failed';
+      setError(errorMessage);
       setUploadProgress(0);
+      setProcessingStatus('');
     }
   };
 
@@ -85,9 +94,12 @@ export default function AudioUploadAndSubmit() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Upload Audio</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-primary" />
+          Upload Audio
+        </CardTitle>
         <CardDescription>
-          Select a voice model and upload an audio file to create an AI cover
+          Select a voice model and upload an audio file to create an AI cover with voice conversion
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -117,10 +129,10 @@ export default function AudioUploadAndSubmit() {
           {isProcessing && uploadProgress > 0 && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Uploading...</span>
-                <span>{uploadProgress}%</span>
+                <span className="text-muted-foreground">{processingStatus}</span>
+                <span className="font-medium">{uploadProgress}%</span>
               </div>
-              <Progress value={uploadProgress} />
+              <Progress value={uploadProgress} className="h-2" />
             </div>
           )}
 
@@ -129,7 +141,7 @@ export default function AudioUploadAndSubmit() {
           {createJobMutation.isSuccess && (
             <InlineAlert
               variant="success"
-              message="Conversion job created! Check the Jobs page to track progress."
+              message="AI voice conversion completed! Check the Jobs page to preview and download your cover."
             />
           )}
 
@@ -137,7 +149,7 @@ export default function AudioUploadAndSubmit() {
             {isProcessing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating Job...
+                Converting Voice...
               </>
             ) : (
               <>

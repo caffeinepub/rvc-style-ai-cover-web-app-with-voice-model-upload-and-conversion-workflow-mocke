@@ -1,44 +1,29 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-05T18:54:33.831Z",
-  "summary": "Frontend error surfacing for backend conversion failures was added (cleanly extracting canister trap/reject reasons and keeping the Create Cover form usable). Backend changes clearly add targetVoiceId validation and create jobs initially in a processing state, but the diff snippet does not show (a) the delayed transition to completed with a non-empty output blob or (b) that the completed output blob is derived from the selected VoiceModel audio rather than echoing the input audio.",
+  "generatedAt": "2026-02-05T19:56:55.568Z",
+  "summary": "Most frontend changes align with rebuilding the Replicate-based conversion flow, resolving the selected model’s direct URL from the backend, improving Replicate output handling, and implementing robust preview playback via Blob/ObjectURL with cleanup and user-facing playback errors. However, from the provided (truncated) backend diff, it is not clearly evidenced that the backend stores the converted audio as the completed job blob as required.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Update backend conversion-job creation so the completed job output audio is derived from the selected target voice model (e.g., stored VoiceModel audio blob) rather than returning the uploaded input audio unchanged.",
-      "reason": "The shown portion of makeVoiceConversionJob validates targetVoiceId and stores a job in #processing, but no visible logic sets the completed output blob from the selected VoiceModel (e.g., model.audio) or otherwise ensures the output differs from the input. The relevant completion/output assignment code is not present in the provided truncated diff snippet.",
-      "evidence": [
-        "backend/main.mo (truncated: makeVoiceConversionJob shows validation + status=#processing, but no output-blob derivation shown)"
-      ]
-    },
-    {
       "id": "REQ-2",
-      "requirement": "Change backend job lifecycle so jobs do not complete instantly: store as processing first, then after a short asynchronous delay transition to completed with a non-empty output blob.",
-      "reason": "The diff shows jobs being created with status=#processing, but it does not show any Timer/async logic that later updates the job status to #completed, nor does it show that a non-empty output blob is populated after a delay. Timer is imported, but the actual delayed transition code is not visible in the provided snippet.",
+      "requirement": "The created job in the backend must store the converted audio bytes as the completed job blob (i.e., preview/download uses the converted audio).",
+      "reason": "The frontend now uploads the converted audio bytes to the backend, but the shown backend implementation of makeVoiceConversionJob sets the job status to #processing and stores the uploaded audio under inputVoiceAudio; the diff excerpt does not show the logic that sets status to #completed with blob = (converted audio). Because the backend code is truncated right where completion is implied, there is insufficient evidence that the completed job blob is actually set to the converted audio.",
       "evidence": [
-        "backend/main.mo (truncated: status initialized to #processing; no later transition code shown)"
+        "backend/main.mo",
+        "frontend/src/hooks/useConversionJobs.ts"
       ]
     }
   ],
-  "hallucinated_features": [
-    {
-      "description": "Added stable-state migration module and introduced a jobIdCounter field used for job ID generation.",
-      "reason": "The BuildRequest does not explicitly request adding a migration module or a persistent counter field; it focuses on output audio derivation, delayed completion, and frontend error display. These changes may be internal refactoring but are not directly requested requirements.",
-      "evidence": [
-        "backend/migration.mo (new file adding jobIdCounter to actor state)",
-        "backend/main.mo (adds var jobIdCounter = 0; uses it to form jobId)"
-      ]
-    }
-  ],
-  "confidence": 0.64,
+  "hallucinated_features": [],
+  "confidence": 0.63,
   "changed_files": [
     "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
     "frontend/src/components/AudioUploadAndSubmit.tsx",
+    "frontend/src/components/JobStatusCard.tsx",
     "frontend/src/hooks/useConversionJobs.ts",
-    "frontend/src/utils/actorErrorMessage.ts",
+    "frontend/src/services/voiceConversion.ts",
+    "frontend/src/utils/downloadExternalBlob.ts",
     "project_state.json"
   ]
 }

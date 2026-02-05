@@ -1,72 +1,89 @@
 {
   "kind": "build_request",
-  "title": "Fix cover-generation so selected voice models produce audible vocals and jobs do not instantly complete",
-  "priority": "normal",
+  "title": "Rebuild voice conversion so completed jobs play the actual model-voiced output",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the backend conversion-job creation so the generated output audio is derived from the selected target voice model (so the resulting file contains audible singing/speaking from that model) instead of returning the original uploaded input audio unchanged.",
-      "target": "backend",
+      "text": "Scrap and rebuild the client-side voice conversion integration so it reliably produces (and saves) audio that uses the selected voice model’s voice (no silent fallback to returning the original audio).",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "recent-messages-4"
         ],
         "quotes": [
-          "It appears that the results don’t actually have the models actually singing and or speaking in the songs.",
-          "I would like an output with the models singing in the songs."
+          "No. It’s still doing that thing where it’s just not playing the model with the output. Scrap the code for that and do it again."
         ]
       },
       "acceptanceCriteria": [
-        "When makeVoiceConversionJob is called with a valid targetVoiceId, the completed job’s output blob is not just the inputVoiceAudio echoed back unchanged.",
-        "For a job created with targetVoiceId referencing an existing VoiceModel, the output blob is populated using data associated with that VoiceModel (e.g., the stored model audio blob) so that downloads contain audible vocal content from the selected model.",
-        "If targetVoiceId does not exist, the call still traps with an \"Invalid voice ID\"-type error (no silent success)."
+        "If Replicate is not configured (missing VITE_REPLICATE_API_TOKEN), the app must show a clear, user-facing error explaining what is missing and must not create a completed job with unconverted/original audio.",
+        "If Replicate conversion fails (API error, polling failure, invalid response), the app must show a clear, user-facing error and must not create a completed job containing unconverted/original audio.",
+        "The conversion request must be made using the voice model the user selected (not a hardcoded/default/undefined model input)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Change backend job lifecycle behavior so newly created conversion jobs do not complete instantly: create jobs in a processing state first, then transition them to completed after a short asynchronous delay, so the frontend polling/processing UI reflects real job progression.",
-      "target": "backend",
+      "text": "Update the conversion pipeline to pass the selected voice model’s actual data URL into the Replicate conversion call by retrieving the selected model from the backend and using its ExternalBlob direct URL as the model input for conversion.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-5"
+          "recent-messages-4"
         ],
         "quotes": [
-          "And the jobs are instantly done with, you guessed it, no signs of the model actually singing and or speaking in it."
+          "it’s just not playing the model with the output"
         ]
       },
       "acceptanceCriteria": [
-        "makeVoiceConversionJob initially stores the new job with status=processing (not completed).",
-        "After a short delay, the job transitions to status=completed with a non-empty output blob.",
-        "Frontend polling (already based on job.status.__kind__ === 'processing') continues until the job becomes completed, then stops polling once there are no processing jobs."
+        "When a user selects a model and submits audio, the frontend must resolve the selected model to a concrete model resource URL derived from the stored model blob (ExternalBlob.getDirectURL()), and use that URL in the conversion request.",
+        "If the selected model cannot be fetched / has no usable URL, the submit must fail with a clear error and must not create a job.",
+        "The created job in the backend must store the converted audio bytes as the completed job blob (i.e., preview/download uses the converted audio)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Ensure the frontend correctly surfaces backend conversion failures related to missing/invalid model IDs by preserving and displaying backend error messages in the Create Cover flow.",
+      "text": "Rebuild frontend audio playback for completed jobs to be robust across browsers by creating a Blob/ObjectURL for preview (instead of relying solely on playing the ExternalBlob direct URL), and ensure playback state and cleanup are handled correctly.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5",
-          "msg-6"
+          "recent-messages-4"
         ],
         "quotes": [
-          "It appears that the results don’t actually have the models actually singing and or speaking in the songs.",
-          "Yeah, fix it please."
+          "it’s just not playing the model with the output"
         ]
       },
       "acceptanceCriteria": [
-        "If job creation fails due to invalid/empty target voice model ID, the UI shows an actionable English error message (e.g., includes the backend-provided reason such as invalid voice ID/unauthorized).",
-        "The Create Cover form remains usable after an error (no stuck loading state; user can reselect model and retry)."
+        "Clicking “Preview” on a completed job must play audio that matches the job’s stored completed blob.",
+        "Stopping/starting preview must work reliably (second click stops, subsequent click restarts).",
+        "Any ObjectURLs created for preview must be revoked when no longer needed (on stop/end/unmount) to avoid leaks.",
+        "If playback fails, the UI must surface a user-facing error (not only console logs)."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Replace the current Replicate request/response handling with a robust implementation that can handle common Replicate output shapes and avoids unsafe base64 conversions that can corrupt large audio files.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "recent-messages-4"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The code must not rely on `btoa(String.fromCharCode(...bytes))` for arbitrary-sized audio (it must use a safe approach that does not overflow call stacks or corrupt data).",
+        "The implementation must correctly handle Replicate `output` fields that may be a string URL or a list of URLs and choose the correct audio URL to download.",
+        "Progress/status updates shown in the UI must reflect Replicate polling states (starting/processing/succeeded/failed) and transition to completion only after the converted audio has been downloaded and stored."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
-    "Do not edit files under frontend/src/components/ui or any paths listed as immutable in SYSTEM_CONTEXT."
+    "Do not edit files under frontend/src/components/ui (read-only).",
+    "Do not edit immutable paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx.",
+    "Backend must remain single-actor with all Motoko logic in backend/main.mo; only add migration.mo if a state/schema upgrade is required."
   ],
   "nonGoals": [
-    "Implementing real AI voice conversion / RVC inference or any external audio-generation service integration.",
-    "Adding third-party auth providers (only Internet Identity is in scope)."
+    "Do not add new backend services or external databases.",
+    "Do not add third-party authentication providers (Internet Identity only).",
+    "Do not implement real-time streaming/audio via WebSockets.",
+    "Do not change the overall product scope beyond fixing the model-voiced output generation and playback reliability."
   ],
   "imageRequirements": {
     "required": [],

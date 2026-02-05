@@ -1,11 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Ensure cover-generation jobs use the selected voice model to produce audible vocals, progress through a real processing lifecycle, and surface backend errors clearly in the UI.
+**Goal:** Ensure voice conversion jobs reliably generate, save, and play the selected model’s converted audio (never silently falling back to the original audio).
 
 **Planned changes:**
-- Update backend conversion job creation so the output audio blob is derived from the selected target voice model rather than echoing the uploaded input audio unchanged.
-- Adjust backend job lifecycle so new jobs start in a processing state and transition to completed after a short asynchronous delay, enabling frontend polling to reflect real progression.
-- Improve the Create Cover frontend flow to preserve and display backend error messages for invalid/missing target voice model IDs, and ensure the form remains usable after failures.
+- Rebuild the client-side Replicate voice conversion flow to fail fast with clear UI errors when Replicate is not configured or conversion fails, and to prevent creating “completed” jobs containing unconverted/original audio.
+- Update the conversion pipeline to resolve the user-selected model via the backend and pass its concrete model resource URL (derived from the stored model blob’s direct URL) into the Replicate conversion request.
+- Store the downloaded converted audio bytes as the backend job’s completed blob so preview/download always uses the converted result.
+- Rebuild completed-job audio preview to use a Blob/ObjectURL for playback (with correct play/stop toggling, cleanup via URL revocation, and user-facing playback errors).
+- Replace Replicate request/response handling with robust output parsing (string URL vs list of URLs), safe binary handling for large audio (no unsafe base64 conversions), and UI status updates that reflect polling states and only complete after the converted audio is persisted.
 
-**User-visible outcome:** Creating a cover with a selected voice model results in an output download with audible vocals from that model; jobs show a brief processing state before completing; and invalid model selections show clear error messages without leaving the UI stuck.
+**User-visible outcome:** Submitting audio with a selected model produces a completed job whose preview/download plays the actual model-converted output, with clear errors shown if Replicate/model resolution/conversion/playback fails.

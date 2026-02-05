@@ -2,48 +2,47 @@
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
   "summary": "New project",
-  "architectural_notes": [
-    "Cover generation pipeline must correctly propagate and use the selected voice model ID; validate non-empty/valid ID before submitting jobs."
-  ],
+  "architectural_notes": [],
   "known_issues": [
-    "Cover-generation jobs complete instantly and outputs contain no model singing/speaking, suggesting the selected voice model ID is missing/incorrect or not applied in backend generation request."
+    "Audio flow/integration is not playing the model-voiced output (model audio output not heard)."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-ensure-the-frontend-correctly-surfaces-backend-conversion-failures-related-to-missing-invalid-model-ids-by-preserving-and-displaying-backend-error-messages-in-the-create-cover-flow",
-      "title": "Ensure the frontend correctly surfaces backend conversion failures related to missing/invalid model IDs by preserving and displaying backend error messages in the Create Cover flow.",
+      "id": "feature-scrap-and-rebuild-the-client-side-voice-conversion-integration-so-it-reliably-produces-and-saves-audio-that-uses-the-selected-voice-model-s-voice-no-silent-fallback-to-returning-the-original-audio",
+      "title": "Scrap and rebuild the client-side voice conversion integration so it reliably produces (and saves) audio that uses the selected voice model’s voice (no silent fallback to returning the original audio).",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-conversion-pipeline-to-pass-the-selected-voice-model-s-actual-data-url-into-the-replicate-conversion-call-by-retrieving-the-selected-model-from-the-backend-and-using-its-externalblob-direct-url-as-the-model-input-for-conversion",
+      "title": "Update the conversion pipeline to pass the selected voice model’s actual data URL into the Replicate conversion call by retrieving the selected model from the backend and using its ExternalBlob direct URL as the model input for conversion.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-rebuild-frontend-audio-playback-for-completed-jobs-to-be-robust-across-browsers-by-creating-a-blob-objecturl-for-preview-instead-of-relying-solely-on-playing-the-externalblob-direct-url-and-ensure-playback-state-and-cleanup-are-handled-correctly",
+      "title": "Rebuild frontend audio playback for completed jobs to be robust across browsers by creating a Blob/ObjectURL for preview (instead of relying solely on playing the ExternalBlob direct URL), and ensure playback state and cleanup are handled correctly.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
-    }
-  ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Fix cover-generation so selected voice models actually sing/speak in the output (ensure correct voice model ID is passed/used; jobs should not complete instantly with no vocals)",
-      "reqIds": [],
-      "status": "pending"
     },
     {
-      "id": "AR-2",
-      "summary": "Update the backend conversion-job creation so the generated output audio is derived from the selected target voice model (so the resulting file contains audible singing/speaking from that model) instead of returning the original uploaded input audio unchanged.",
+      "id": "feature-replace-the-current-replicate-request-response-handling-with-a-robust-implementation-that-can-handle-common-replicate-output-shapes-and-avoids-unsafe-base64-conversions-that-can-corrupt-large-audio-files",
+      "title": "Replace the current Replicate request/response handling with a robust implementation that can handle common Replicate output shapes and avoids unsafe base64 conversions that can corrupt large audio files.",
       "reqIds": [
-        "REQ-1"
+        "REQ-4"
       ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Change backend job lifecycle behavior so newly created conversion jobs do not complete instantly: create jobs in a processing state first, then transition them to completed after a short asynchronous delay, so the frontend polling/processing UI reflects real job progression.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "status": "pending"
+      "version": 1
     }
   ],
-  "projectName": "Fix cover-generation so selected voice models produce audible vocals and jobs do not instantly complete",
+  "new_feature_requests": [],
+  "projectName": "Rebuild voice conversion so completed jobs play the actual model-voiced output",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

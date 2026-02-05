@@ -13,7 +13,7 @@ export async function downloadExternalBlob(blob: ExternalBlob, filename: string)
     link.click();
     document.body.removeChild(link);
     
-    // Clean up the URL object
+    // Clean up the URL object after a short delay
     setTimeout(() => URL.revokeObjectURL(url), 100);
   } catch (error) {
     console.error('Failed to download blob:', error);

@@ -12,9 +12,9 @@ import Storage "blob-storage/Storage";
 import AccessControl "authorization/access-control";
 import Timer "mo:core/Timer";
 import Nat32 "mo:core/Nat32";
-import Migration "migration";
 
-(with migration = Migration.run)
+
+
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
