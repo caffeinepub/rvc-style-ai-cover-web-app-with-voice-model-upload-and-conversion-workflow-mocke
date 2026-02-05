@@ -1,88 +1,74 @@
 {
   "kind": "build_request",
-  "title": "Fix “Load failed” error when creating an AI cover",
-  "priority": "high",
+  "title": "Add in-app configuration for Replicate API token",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Improve error handling for the Replicate API calls used during cover creation so that generic browser/network errors (e.g., fetch throwing a TypeError that surfaces as “Load failed”) are caught and converted into a clear, user-facing error message that includes the failing step (create prediction, poll prediction, download result) and the HTTP status/body when available.",
+      "text": "Add an in-app UI that lets the user enter, save, and clear the Replicate API token used for voice conversion (instead of requiring only `VITE_REPLICATE_API_TOKEN` in `.env`).",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Ok, now it’s saying load failed when I try to make a cover, can you try and fix it?"
+          "Do you think you can make it so I can upload the API token through the app?"
         ]
       },
       "acceptanceCriteria": [
-        "When Replicate POST /v1/predictions fails, the UI displays an InlineAlert/toast message that includes the HTTP status code and response text (when available).",
-        "When polling GET /v1/predictions/{id} fails, the UI displays an InlineAlert/toast message that indicates the status-check step failed and includes HTTP status code (when available).",
-        "When downloading the final output audio URL fails, the UI displays an InlineAlert/toast message that indicates the download step failed and includes HTTP status code (when available).",
-        "When fetch fails before an HTTP response is available (e.g., network/CORS), the UI displays a friendly message (in English) such as “Network request failed while contacting Replicate. Check your connection and that the Replicate API token is configured.” instead of a vague “Load failed”."
+        "On the Create Cover flow, when no token is configured, the UI provides an input to paste a Replicate API token and a clear call-to-action to save it.",
+        "The token input is masked by default with an option to reveal it.",
+        "The UI provides a \"Clear token\" action that removes the stored token.",
+        "User-facing text is in English and clearly indicates the token is stored on the client (browser) and not uploaded to the app backend."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add a preflight configuration check on the Create Cover flow to detect when `VITE_REPLICATE_API_TOKEN` is missing/empty at runtime and block submission with a clear on-page error explaining that AI cover creation requires a Replicate API token and how to configure it (referencing `VITE_REPLICATE_API_TOKEN`).",
+      "text": "Persist the Replicate API token on the client and update the voice conversion pipeline to use the stored token at runtime, with `import.meta.env.VITE_REPLICATE_API_TOKEN` as a fallback.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Ok, now it’s saying load failed when I try to make a cover, can you try and fix it?"
+          "upload the API token through the app"
         ]
       },
       "acceptanceCriteria": [
-        "If `import.meta.env.VITE_REPLICATE_API_TOKEN` is empty, the Create Cover page shows an InlineAlert (destructive or info) explaining that the token is not configured and the submit button is disabled or submission is prevented with the same message.",
-        "If the token is present, the Create Cover page behaves as it does today (no additional blocking UI)."
+        "`isReplicateConfigured()` returns true when either a saved (runtime) token exists or `VITE_REPLICATE_API_TOKEN` is present.",
+        "`convertVoiceWithReplicate(...)` uses the saved (runtime) token when available, otherwise falls back to `VITE_REPLICATE_API_TOKEN`.",
+        "If neither token source exists (or the token is empty), voice conversion remains hard-blocked with a clear error message (no silent failures).",
+        "The token is never sent to the Motoko backend in any API call or stored in backend state."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Ensure the audio MIME type used when converting uploaded audio bytes to a data URL is derived from the uploaded file (with safe fallbacks) rather than always using `audio/mpeg`, to reduce conversion failures for non-MP3 uploads.",
+      "text": "Add a token validation check in the token UI so the user can confirm whether the pasted token is valid before running a conversion.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Ok, now it’s saying load failed when I try to make a cover, can you try and fix it?"
+          "upload the API token through the app"
         ]
       },
       "acceptanceCriteria": [
-        "Uploading a WAV/M4A/OGG file uses the file’s MIME type (or an appropriate fallback like `application/octet-stream` when missing) when building the data URL sent to Replicate.",
-        "Existing MP3 upload flow continues to work."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Add lightweight diagnostic logging (console-level) around the cover creation pipeline to help identify where failures occur (model URL fetch, Replicate create, Replicate poll, result download, backend save), without exposing the Replicate API token in logs.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Ok, now it’s saying load failed when I try to make a cover, can you try and fix it?"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Console logs identify the current pipeline step and key non-secret metadata (e.g., job id, Replicate prediction id, statuses) and never print the token value.",
-        "Logs are present only in the cover creation path and do not significantly spam during normal use (e.g., poll logs are rate-limited or summarized)."
+        "The token UI includes a \"Test token\" action that makes a Replicate API request using the provided token and shows a success or error state.",
+        "If validation fails, the UI shows a readable error and does not mark the token as valid/configured based solely on being non-empty.",
+        "If validation succeeds, the Create Cover flow becomes enabled without requiring a page reload."
       ]
     }
   ],
   "constraints": [
-    "Frontend immutable paths must not be edited: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
-    "Backend must remain single-actor Motoko architecture (backend/main.mo); only add a migration file if existing stable state needs schema changes.",
-    "Use English for any user-facing text."
+    "Do not edit files under `frontend/src/components/ui`.",
+    "Do not edit immutable hook files: `frontend/src/hooks/useInternetIdentity.ts`, `frontend/src/hooks/useInternetIdentity.tsx`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`.",
+    "Backend must remain a single Motoko actor in `backend/main.mo`; do not add external API calls to the backend (Replicate calls must remain client-side)."
   ],
   "nonGoals": [
-    "Adding new third-party authentication providers (only Internet Identity is supported).",
-    "Moving Replicate calls to the backend (backend cannot call external APIs).",
-    "Adding real-time/WebSocket updates for job progress."
+    "Implementing third-party authentication for Replicate or any OAuth flow.",
+    "Storing the Replicate token in the backend canister state.",
+    "Adding additional external providers beyond Replicate."
   ],
   "imageRequirements": {
     "required": [],

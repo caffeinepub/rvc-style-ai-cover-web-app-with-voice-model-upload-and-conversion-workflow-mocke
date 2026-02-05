@@ -1,84 +1,75 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-05T21:23:29.749Z",
+  "generatedAt": "2026-02-05T21:32:02.406Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
+    "total": 3,
     "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Rework the voice conversion job lifecycle so a job is only marked completed when the frontend uploads the converted audio output, instead of the backend auto-completing jobs on a timer.",
+        "summary": "Add an in-app UI that lets the user enter, save, and clear the Replicate API token used for voice conversion (instead of requiring only `VITE_REPLICATE_API_TOKEN` in `.env`).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useConversionJobs.ts",
-          "frontend/src/components/AudioUploadAndSubmit.tsx",
-          "frontend/src/components/JobsTable.tsx",
-          "frontend/src/components/JobStatusCard.tsx"
+          "frontend/src/components/ReplicateTokenCard.tsx",
+          "frontend/src/pages/CreateCoverPage.tsx",
+          "frontend/src/components/AudioUploadAndSubmit.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useConversionJobs.ts"
+          "frontend/src/components/ReplicateTokenCard.tsx",
+          "frontend/src/pages/CreateCoverPage.tsx",
+          "frontend/src/components/AudioUploadAndSubmit.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Update backend job APIs to support the revised flow: (1) create a processing job with input audio, (2) complete an existing job by storing the converted output blob, and (3) enforce authorization so only the job creator can complete their job.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Update the frontend cover creation flow to run Replicate conversion first and then finalize the job by uploading the converted audio to the backend, with clear step-by-step progress and error handling.",
+        "summary": "Persist the Replicate API token on the client and update the voice conversion pipeline to use the stored token at runtime, with `import.meta.env.VITE_REPLICATE_API_TOKEN` as a fallback.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useConversionJobs.ts",
-          "frontend/src/components/AudioUploadAndSubmit.tsx",
+          "frontend/src/services/replicateToken.ts",
+          "frontend/src/hooks/useReplicateToken.ts",
           "frontend/src/services/voiceConversion.ts",
-          "frontend/src/pages/CreateCoverPage.tsx",
-          "frontend/src/utils/actorErrorMessage.ts"
+          "frontend/src/components/AudioUploadAndSubmit.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useConversionJobs.ts",
-          "frontend/src/services/voiceConversion.ts"
+          "frontend/src/services/replicateToken.ts",
+          "frontend/src/hooks/useReplicateToken.ts",
+          "frontend/src/services/voiceConversion.ts",
+          "frontend/src/components/AudioUploadAndSubmit.tsx"
         ]
       },
       {
-        "id": "REQ-4",
-        "summary": "Make Replicate token configuration robust in production: ensure `VITE_REPLICATE_API_TOKEN` is actually available to the running frontend build, and add an explicit user-facing warning + hard block when it is missing or empty.",
+        "id": "REQ-3",
+        "summary": "Add a token validation check in the token UI so the user can confirm whether the pasted token is valid before running a conversion.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/services/voiceConversion.ts",
-          "frontend/src/components/AudioUploadAndSubmit.tsx",
-          "frontend/src/pages/CreateCoverPage.tsx",
-          "frontend/.env",
-          "frontend/.env.example"
+          "frontend/src/services/replicateValidation.ts",
+          "frontend/src/components/ReplicateTokenCard.tsx",
+          "frontend/src/pages/CreateCoverPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/services/voiceConversion.ts",
-          "frontend/.env",
-          "frontend/.env.example"
+          "frontend/src/services/replicateValidation.ts",
+          "frontend/src/components/ReplicateTokenCard.tsx",
+          "frontend/src/pages/CreateCoverPage.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/.env",
-    "frontend/.env.example",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useConversionJobs.ts",
+    "frontend/src/components/AudioUploadAndSubmit.tsx",
+    "frontend/src/components/ReplicateTokenCard.tsx",
+    "frontend/src/hooks/useReplicateToken.ts",
+    "frontend/src/pages/CreateCoverPage.tsx",
+    "frontend/src/services/replicateToken.ts",
+    "frontend/src/services/replicateValidation.ts",
     "frontend/src/services/voiceConversion.ts",
     "project_state.json",
     "scratch/component-selection.json",

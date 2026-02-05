@@ -3,47 +3,43 @@
   "projectStateVersion": 3,
   "summary": "New project",
   "architectural_notes": [],
-  "known_issues": [
-    "System is still \"acting up\" after Version 11 deployment; user requests a full rebuild from scratch."
-  ],
-  "isFixRequest": true,
+  "known_issues": [],
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-rework-the-voice-conversion-job-lifecycle-so-a-job-is-only-marked-completed-when-the-frontend-uploads-the-converted-audio-output-instead-of-the-backend-auto-completing-jobs-on-a-timer",
-      "title": "Rework the voice conversion job lifecycle so a job is only marked completed when the frontend uploads the converted audio output, instead of the backend auto-completing jobs on a timer.",
+      "id": "feature-add-an-in-app-ui-that-lets-the-user-enter-save-and-clear-the-replicate-api-token-used-for-voice-conversion-instead-of-requiring-only-vite-replicate-api-token-in-env",
+      "title": "Add an in-app UI that lets the user enter, save, and clear the Replicate API token used for voice conversion (instead of requiring only `VITE_REPLICATE_API_TOKEN` in `.env`).",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-the-frontend-cover-creation-flow-to-run-replicate-conversion-first-and-then-finalize-the-job-by-uploading-the-converted-audio-to-the-backend-with-clear-step-by-step-progress-and-error-handling",
-      "title": "Update the frontend cover creation flow to run Replicate conversion first and then finalize the job by uploading the converted audio to the backend, with clear step-by-step progress and error handling.",
+      "id": "feature-persist-the-replicate-api-token-on-the-client-and-update-the-voice-conversion-pipeline-to-use-the-stored-token-at-runtime-with-import-meta-env-vite-replicate-api-token-as-a-fallback",
+      "title": "Persist the Replicate API token on the client and update the voice conversion pipeline to use the stored token at runtime, with `import.meta.env.VITE_REPLICATE_API_TOKEN` as a fallback.",
       "reqIds": [
-        "REQ-3"
+        "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-make-replicate-token-configuration-robust-in-production-ensure-vite-replicate-api-token-is-actually-available-to-the-running-frontend-build-and-add-an-explicit-user-facing-warning-hard-block-when-it-is-missing-or-empty",
-      "title": "Make Replicate token configuration robust in production: ensure `VITE_REPLICATE_API_TOKEN` is actually available to the running frontend build, and add an explicit user-facing warning + hard block when it is missing or empty.",
+      "id": "feature-add-a-token-validation-check-in-the-token-ui-so-the-user-can-confirm-whether-the-pasted-token-is-valid-before-running-a-conversion",
+      "title": "Add a token validation check in the token UI so the user can confirm whether the pasted token is valid before running a conversion.",
       "reqIds": [
-        "REQ-4"
+        "REQ-3"
       ],
       "version": 1
     }
   ],
   "new_feature_requests": [
     {
-      "id": "AR-2",
-      "summary": "Update backend job APIs to support the revised flow: (1) create a processing job with input audio, (2) complete an existing job by storing the converted output blob, and (3) enforce authorization so only the job creator can complete their job.",
-      "reqIds": [
-        "REQ-2"
-      ],
+      "id": "AR-1",
+      "summary": "Allow users to upload/configure an API token through the app UI",
+      "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Rebuild the AI cover creation flow end-to-end to eliminate the current “acting up” behavior",
+  "projectName": "Add in-app configuration for Replicate API token",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

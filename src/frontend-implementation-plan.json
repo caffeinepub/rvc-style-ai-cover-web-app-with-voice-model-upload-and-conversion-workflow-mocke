@@ -1,102 +1,90 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix Replicate cover creation “Load failed” errors with clearer UI messaging, config checks, MIME fixes, and diagnostics",
+  "title": "In-app Replicate API token configuration (client-side)",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Catch and normalize Replicate fetch/network failures into clear, step-specific user-facing errors with HTTP status/body when available.",
+      "summary": "Add an in-app token settings UI in the Create Cover flow to enter/save/reveal/clear the Replicate API token, with clear client-only storage messaging.",
       "acceptanceCriteria": [
-        "When Replicate POST /v1/predictions fails, the UI displays an InlineAlert/toast message that includes the HTTP status code and response text (when available).",
-        "When polling GET /v1/predictions/{id} fails, the UI displays an InlineAlert/toast message that indicates the status-check step failed and includes HTTP status code (when available).",
-        "When downloading the final output audio URL fails, the UI displays an InlineAlert/toast message that indicates the download step failed and includes HTTP status code (when available).",
-        "When fetch fails before an HTTP response is available (e.g., network/CORS), the UI displays a friendly message (in English) such as “Network request failed while contacting Replicate. Check your connection and that the Replicate API token is configured.” instead of a vague “Load failed”."
+        "On the Create Cover flow, when no token is configured, the UI provides an input to paste a Replicate API token and a clear call-to-action to save it.",
+        "The token input is masked by default with an option to reveal it.",
+        "The UI provides a \"Clear token\" action that removes the stored token.",
+        "User-facing text is in English and clearly indicates the token is stored on the client (browser) and not uploaded to the app backend."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/services/voiceConversion.ts",
-          "operation": "modify",
-          "description": "Introduce step-aware error handling around Replicate calls (create prediction, poll prediction, download result): wrap fetch calls to capture HTTP status and response text when available; convert network/TypeError failures into a friendly, actionable message; and throw normalized Errors whose messages include the failing step and HTTP details (without exposing the token)."
+          "path": "frontend/src/components/ReplicateTokenCard.tsx",
+          "operation": "create",
+          "description": "Create a Create-Cover-friendly settings card that lets the user paste a Replicate API token, save it to client storage, reveal/mask it, and clear it. Include English helper text stating the token is stored in the browser only and is not uploaded to the app backend."
         },
         {
-          "path": "frontend/src/hooks/useConversionJobs.ts",
+          "path": "frontend/src/pages/CreateCoverPage.tsx",
           "operation": "modify",
-          "description": "Ensure errors thrown from the Replicate conversion pipeline are surfaced consistently via existing toast/InlineAlert flows (preserve the improved step-aware messages from the service so the UI shows the correct failing step and any HTTP status/body details)."
+          "description": "Wire the new ReplicateTokenCard into the Create Cover flow: when Replicate is not configured, show the token UI with a clear save call-to-action and client-only storage messaging, and ensure the rest of the flow is clearly gated until configured."
         },
         {
           "path": "frontend/src/components/AudioUploadAndSubmit.tsx",
           "operation": "modify",
-          "description": "Adjust error presentation, if needed, to prefer the normalized service error message for Replicate failures so users see the failing step (create/poll/download) and any available HTTP status/body rather than generic browser messages."
+          "description": "Update Create Cover form gating UI to reflect in-app configuration (not just .env), and ensure controls are disabled when Replicate is not configured with a clear, English message pointing users to configure the token in-app (stored client-side)."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Add a runtime preflight check for missing VITE_REPLICATE_API_TOKEN and block Create Cover submission with a clear on-page InlineAlert.",
+      "summary": "Persist the token client-side and update Replicate configuration checks and voice conversion runtime token selection with env fallback; keep hard-blocking when absent and never send token to backend.",
       "acceptanceCriteria": [
-        "If `import.meta.env.VITE_REPLICATE_API_TOKEN` is empty, the Create Cover page shows an InlineAlert (destructive or info) explaining that the token is not configured and the submit button is disabled or submission is prevented with the same message.",
-        "If the token is present, the Create Cover page behaves as it does today (no additional blocking UI)."
+        "`isReplicateConfigured()` returns true when either a saved (runtime) token exists or `VITE_REPLICATE_API_TOKEN` is present.",
+        "`convertVoiceWithReplicate(...)` uses the saved (runtime) token when available, otherwise falls back to `VITE_REPLICATE_API_TOKEN`.",
+        "If neither token source exists (or the token is empty), voice conversion remains hard-blocked with a clear error message (no silent failures).",
+        "The token is never sent to the Motoko backend in any API call or stored in backend state."
       ],
       "file_operations": [
         {
+          "path": "frontend/src/services/replicateToken.ts",
+          "operation": "create",
+          "description": "Add a small client-only token persistence service (get/save/clear) backed by browser storage (e.g., localStorage) and a lightweight change notification mechanism so UI can update without reload."
+        },
+        {
+          "path": "frontend/src/hooks/useReplicateToken.ts",
+          "operation": "create",
+          "description": "Add a React hook that exposes the current saved runtime token (and change events) so the Create Cover flow can re-render immediately after save/clear without page reload."
+        },
+        {
           "path": "frontend/src/services/voiceConversion.ts",
           "operation": "modify",
-          "description": "Export a small runtime configuration helper (e.g., a boolean check) for whether `import.meta.env.VITE_REPLICATE_API_TOKEN` is present/non-empty so UI can preflight before starting conversion, while keeping token values out of logs and UI."
+          "description": "Update Replicate configuration logic to check for a saved runtime token first and fall back to `import.meta.env.VITE_REPLICATE_API_TOKEN`. Ensure `isReplicateConfigured()` and `convertVoiceWithReplicate(...)` use the runtime token when present, otherwise env fallback, and throw a clear error when neither exists. Ensure the token is only used in client-side Replicate requests and is not passed to any backend capability."
         },
         {
           "path": "frontend/src/components/AudioUploadAndSubmit.tsx",
           "operation": "modify",
-          "description": "Add a preflight check using `import.meta.env.VITE_REPLICATE_API_TOKEN` (or the helper from the voice conversion service). When missing/empty, render an InlineAlert explaining that AI cover creation requires `VITE_REPLICATE_API_TOKEN` and how to configure it, and disable/prevent submission with the same message."
-        },
-        {
-          "path": "frontend/src/pages/CreateCoverPage.tsx",
-          "operation": "modify",
-          "description": "Optionally surface the same token-missing InlineAlert near the page header (while still allowing navigation), ensuring the Create Cover flow is clearly blocked until `VITE_REPLICATE_API_TOKEN` is configured."
+          "description": "Switch token gating to use the new reactive hook/service (so enabling happens instantly after saving a valid token). Ensure any preflight errors remain hard-blocking and user-readable when no token is available from either source."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Use the uploaded file’s MIME type (with safe fallbacks) when converting audio bytes to a data URL for Replicate, instead of always audio/mpeg.",
+      "summary": "Add a client-side 'Test token' validation action in the token UI that calls Replicate and updates Create Cover enabled state without reload.",
       "acceptanceCriteria": [
-        "Uploading a WAV/M4A/OGG file uses the file’s MIME type (or an appropriate fallback like `application/octet-stream` when missing) when building the data URL sent to Replicate.",
-        "Existing MP3 upload flow continues to work."
+        "The token UI includes a \"Test token\" action that makes a Replicate API request using the provided token and shows a success or error state.",
+        "If validation fails, the UI shows a readable error and does not mark the token as valid/configured based solely on being non-empty.",
+        "If validation succeeds, the Create Cover flow becomes enabled without requiring a page reload."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/AudioUploadAndSubmit.tsx",
-          "operation": "modify",
-          "description": "Capture the selected File’s MIME type (from `audioFile.type`, with fallbacks) and pass it along to the conversion job creation so the Replicate data-URL conversion can use the correct MIME type for non-MP3 uploads."
+          "path": "frontend/src/services/replicateValidation.ts",
+          "operation": "create",
+          "description": "Add a client-side helper that performs a lightweight Replicate API request using a provided token and returns a success/error result suitable for UI display (no backend involvement)."
         },
         {
-          "path": "frontend/src/hooks/useConversionJobs.ts",
+          "path": "frontend/src/components/ReplicateTokenCard.tsx",
           "operation": "modify",
-          "description": "Extend the create-job parameters to accept an audio MIME type (optional) and forward it to the Replicate conversion service so the service can build a data URL using the uploaded file’s MIME type."
+          "description": "Implement a \"Test token\" action that uses the validation helper, shows a clear success/error state, and (on success) enables saving/using the token so the Create Cover flow becomes enabled immediately without reload."
         },
         {
-          "path": "frontend/src/services/voiceConversion.ts",
+          "path": "frontend/src/pages/CreateCoverPage.tsx",
           "operation": "modify",
-          "description": "Update data-URL conversion to accept a caller-provided MIME type and apply safe fallbacks (e.g., use provided type when present, otherwise `application/octet-stream`) instead of hardcoding `audio/mpeg`, while keeping the existing MP3 flow working."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Add lightweight, non-spammy console diagnostics for the cover creation pipeline steps without logging the Replicate token.",
-      "acceptanceCriteria": [
-        "Console logs identify the current pipeline step and key non-secret metadata (e.g., job id, Replicate prediction id, statuses) and never print the token value.",
-        "Logs are present only in the cover creation path and do not significantly spam during normal use (e.g., poll logs are rate-limited or summarized)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/services/voiceConversion.ts",
-          "operation": "modify",
-          "description": "Add console-level diagnostic logs for key Replicate steps (model URL usage, create prediction, poll prediction status changes, download result) including non-secret metadata (prediction id, status transitions, attempt counts). Rate-limit/summarize polling logs (e.g., log only on status changes or every N attempts), and ensure no logs include the Replicate token."
-        },
-        {
-          "path": "frontend/src/hooks/useConversionJobs.ts",
-          "operation": "modify",
-          "description": "Add step-level diagnostic logs around the broader pipeline (model fetch, Replicate conversion start/end, backend save start/end) including non-secret identifiers (selected model id, returned job id) and ensure token is never logged."
+          "description": "Ensure the Create Cover page reacts to successful token validation/save (via the new hook/service) so the main AudioUploadAndSubmit section becomes enabled immediately when a valid token is confirmed."
         }
       ]
     }

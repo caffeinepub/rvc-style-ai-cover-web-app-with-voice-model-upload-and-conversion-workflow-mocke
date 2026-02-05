@@ -10,6 +10,7 @@ import { Music, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import InlineAlert from './InlineAlert';
 import { fileToBytes } from '../utils/fileToBytes';
 import { isReplicateConfigured } from '../services/voiceConversion';
+import { useReplicateToken } from '../hooks/useReplicateToken';
 
 export default function AudioUploadAndSubmit() {
   const [selectedModelId, setSelectedModelId] = useState('');
@@ -19,6 +20,9 @@ export default function AudioUploadAndSubmit() {
   const [processingStatus, setProcessingStatus] = useState<string>('');
 
   const createJobMutation = useCreateConversionJob();
+  
+  // Use reactive token hook so UI updates immediately when token is saved
+  useReplicateToken();
   const replicateConfigured = isReplicateConfigured();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,7 +56,7 @@ export default function AudioUploadAndSubmit() {
 
     // Preflight check for Replicate token
     if (!replicateConfigured) {
-      setError('Replicate API token is not configured. Please add VITE_REPLICATE_API_TOKEN to your .env file to enable AI voice conversion.');
+      setError('Replicate API token is not configured. Please configure your token above to enable AI voice conversion.');
       return;
     }
 
@@ -115,14 +119,6 @@ export default function AudioUploadAndSubmit() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {!replicateConfigured && (
-          <InlineAlert
-            variant="destructive"
-            message="AI cover creation requires a Replicate API token. Please add VITE_REPLICATE_API_TOKEN to your .env file."
-            className="mb-4"
-          />
-        )}
-
         <form onSubmit={handleSubmit} className="space-y-4">
           <ModelSelect
             value={selectedModelId}
@@ -174,7 +170,7 @@ export default function AudioUploadAndSubmit() {
             ) : !replicateConfigured ? (
               <>
                 <AlertCircle className="mr-2 h-4 w-4" />
-                API Token Required
+                Configure API Token Above
               </>
             ) : (
               <>

@@ -2,10 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-rework-the-voice-conversion-job-lifecycle-so-a-job-is-only-marked-completed-when-the-frontend-uploads-the-converted-audio-output-instead-of-the-backend-auto-completing-jobs-on-a-timer",
-      "featureTitle": "Rework the voice conversion job lifecycle so a job is only marked completed when the frontend uploads the converted audio output, instead of the backend auto-completing jobs on a timer.",
+      "featureId": "feature-add-an-in-app-ui-that-lets-the-user-enter-save-and-clear-the-replicate-api-token-used-for-voice-conversion-instead-of-requiring-only-vite-replicate-api-token-in-env",
+      "featureTitle": "Add an in-app UI that lets the user enter, save, and clear the Replicate API token used for voice conversion (instead of requiring only `VITE_REPLICATE_API_TOKEN` in `.env`).",
       "files": [
-        "frontend/src/hooks/useConversionJobs.ts"
+        "frontend/src/components/AudioUploadAndSubmit.tsx",
+        "frontend/src/components/ReplicateTokenCard.tsx",
+        "frontend/src/pages/CreateCoverPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -22,11 +24,35 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-the-frontend-cover-creation-flow-to-run-replicate-conversion-first-and-then-finalize-the-job-by-uploading-the-converted-audio-to-the-backend-with-clear-step-by-step-progress-and-error-handling",
-      "featureTitle": "Update the frontend cover creation flow to run Replicate conversion first and then finalize the job by uploading the converted audio to the backend, with clear step-by-step progress and error handling.",
+      "featureId": "feature-persist-the-replicate-api-token-on-the-client-and-update-the-voice-conversion-pipeline-to-use-the-stored-token-at-runtime-with-import-meta-env-vite-replicate-api-token-as-a-fallback",
+      "featureTitle": "Persist the Replicate API token on the client and update the voice conversion pipeline to use the stored token at runtime, with `import.meta.env.VITE_REPLICATE_API_TOKEN` as a fallback.",
       "files": [
-        "frontend/src/hooks/useConversionJobs.ts",
+        "frontend/src/components/AudioUploadAndSubmit.tsx",
+        "frontend/src/hooks/useReplicateToken.ts",
+        "frontend/src/services/replicateToken.ts",
         "frontend/src/services/voiceConversion.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-token-validation-check-in-the-token-ui-so-the-user-can-confirm-whether-the-pasted-token-is-valid-before-running-a-conversion",
+      "featureTitle": "Add a token validation check in the token UI so the user can confirm whether the pasted token is valid before running a conversion.",
+      "files": [
+        "frontend/src/components/ReplicateTokenCard.tsx",
+        "frontend/src/pages/CreateCoverPage.tsx",
+        "frontend/src/services/replicateValidation.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -39,28 +65,6 @@
       ],
       "testIds": [
         "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-make-replicate-token-configuration-robust-in-production-ensure-vite-replicate-api-token-is-actually-available-to-the-running-frontend-build-and-add-an-explicit-user-facing-warning-hard-block-when-it-is-missing-or-empty",
-      "featureTitle": "Make Replicate token configuration robust in production: ensure `VITE_REPLICATE_API_TOKEN` is actually available to the running frontend build, and add an explicit user-facing warning + hard block when it is missing or empty.",
-      "files": [
-        "frontend/.env",
-        "frontend/.env.example",
-        "frontend/src/services/voiceConversion.ts"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
       ],
       "confidence": "high"
     }

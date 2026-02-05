@@ -1,65 +1,40 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-05T21:23:29.746Z",
-  "summary": "Diff implements a new create→Replicate-convert→complete job pipeline on the frontend and introduces Replicate token hard-blocking plus a production .env token. Backend shows new job status types (#processing/#completed with output blob) and a new completeVoiceConversionJob entrypoint, but key backend acceptance criteria (authorization enforcement, removal of timer-based completion, and list/get API compatibility) are not fully verifiable from the truncated backend diff.",
+  "generatedAt": "2026-02-05T21:32:02.403Z",
+  "summary": "Diff adds client-side Replicate token storage (localStorage), a reactive hook, token validation via a Replicate API request, and updates voice conversion/token checks. However, the Create Cover page only renders the token UI when Replicate is not configured, which prevents clearing an already-saved token, and the Save action appears to persist tokens without requiring a successful validation, allowing an invalid non-empty token to mark the app as configured.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "Backend rejects attempts to complete a job by any principal other than the job creator.",
-      "reason": "backend/main.mo shows the start of completeVoiceConversionJob but its authorization checks are not visible due to truncation, so enforcement cannot be confirmed from the provided diff summary.",
+      "id": "REQ-1",
+      "requirement": "Provide a UI to enter, save, and clear the Replicate API token in-app on the Create Cover flow; includes a 'Clear token' action that removes the stored token.",
+      "reason": "Although ReplicateTokenCard implements a clear action, CreateCoverPage only renders ReplicateTokenCard when `!replicateConfigured`, meaning once a runtime token (or env token) exists the UI is hidden and the user no longer has an in-app way to clear the stored token on the Create Cover flow.",
       "evidence": [
-        "backend/main.mo (truncated at `completeVoiceConversionJob`)"
+        "frontend/src/pages/CreateCoverPage.tsx",
+        "frontend/src/components/ReplicateTokenCard.tsx"
       ]
     },
     {
-      "id": "REQ-2",
-      "requirement": "Backend no longer relies on Timer-based completion for jobs created via the UI flow.",
-      "reason": "The diff excerpt does not show removal of any prior Timer-based logic; absence cannot be confirmed from the truncated snippet.",
+      "id": "REQ-3",
+      "requirement": "Token UI validation must not mark the token as valid/configured based solely on being non-empty; validation failure should not enable the Create Cover flow, and success should enable without reload.",
+      "reason": "`isReplicateConfigured()` becomes true when any non-empty saved token exists (runtime token in localStorage). ReplicateTokenCard's save handler persists the token without requiring a successful `validateReplicateToken(...)` result, so an invalid but non-empty token can be saved and immediately make the app appear configured/enabled.",
       "evidence": [
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "requirement": "Existing list/get job queries continue to work and reflect the new status progression.",
-      "reason": "Frontend calls actor.getAllConversionJobs() and actor.getJob(), but the backend implementations/signatures for these query methods are not shown in the diff excerpt, so compatibility and returned status progression cannot be verified.",
-      "evidence": [
-        "frontend/src/hooks/useConversionJobs.ts",
-        "backend/main.mo (truncated)"
+        "frontend/src/services/voiceConversion.ts",
+        "frontend/src/services/replicateToken.ts",
+        "frontend/src/components/ReplicateTokenCard.tsx",
+        "frontend/src/pages/CreateCoverPage.tsx"
       ]
     }
   ],
-  "hallucinated_features": [
-    {
-      "description": "Global UI re-theming and design system changes (warm amber/orange OKLCH palette, custom Tailwind tokens, typography, shadows).",
-      "reason": "Not requested by any REQ; requirements focus on job lifecycle, Replicate flow, and token configuration robustness.",
-      "evidence": [
-        "frontend-file-summaries.txt (frontend/src/index.css, frontend/tailwind.config.js)"
-      ]
-    },
-    {
-      "description": "New/expanded app layout, navigation, branding assets, and general routing structure (AppLayout/AppNav/BrandLogo/footer attribution).",
-      "reason": "Not requested; outside the scope of fixing the cover creation flow and token/job lifecycle requirements.",
-      "evidence": [
-        "frontend-file-summaries.txt (frontend/src/App.tsx, frontend/src/components/AppLayout.tsx, frontend/src/components/AppNav.tsx, frontend/src/components/BrandLogo.tsx)"
-      ]
-    },
-    {
-      "description": "Additional UX components unrelated to the specified flow (EmptyStateHero, InlineAlert) and expanded voice model management behavior (e.g., delete functionality, model ID/key changes).",
-      "reason": "Not explicitly requested by REQ-1..REQ-4; could be helpful but is not part of the stated requirements.",
-      "evidence": [
-        "frontend-file-summaries.txt (frontend/src/components/EmptyStateHero.tsx, frontend/src/components/InlineAlert.tsx, frontend/src/components/VoiceModelsList.tsx, frontend/src/hooks/useVoiceModels.ts)"
-      ]
-    }
-  ],
-  "confidence": 0.66,
+  "hallucinated_features": [],
+  "confidence": 0.74,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/.env",
-    "frontend/.env.example",
-    "frontend/src/hooks/useConversionJobs.ts",
+    "frontend/src/components/AudioUploadAndSubmit.tsx",
+    "frontend/src/components/ReplicateTokenCard.tsx",
+    "frontend/src/hooks/useReplicateToken.ts",
+    "frontend/src/pages/CreateCoverPage.tsx",
+    "frontend/src/services/replicateToken.ts",
+    "frontend/src/services/replicateValidation.ts",
     "frontend/src/services/voiceConversion.ts",
     "project_state.json"
   ]

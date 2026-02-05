@@ -1,7 +1,9 @@
 // Client-side voice conversion using Replicate API
 // This handles the actual AI voice conversion since the backend cannot call external APIs
 
-const REPLICATE_API_TOKEN = import.meta.env.VITE_REPLICATE_API_TOKEN || '';
+import { getSavedToken } from './replicateToken';
+
+const ENV_TOKEN = import.meta.env.VITE_REPLICATE_API_TOKEN || '';
 
 interface ReplicateResponse {
   id: string;
@@ -11,10 +13,21 @@ interface ReplicateResponse {
 }
 
 /**
- * Check if Replicate API token is configured
+ * Get the active Replicate token (runtime token with env fallback)
+ */
+function getActiveToken(): string {
+  const runtimeToken = getSavedToken();
+  if (runtimeToken && runtimeToken.trim().length > 0) {
+    return runtimeToken.trim();
+  }
+  return ENV_TOKEN.trim();
+}
+
+/**
+ * Check if Replicate API token is configured (runtime or env)
  */
 export function isReplicateConfigured(): boolean {
-  const token = REPLICATE_API_TOKEN.trim();
+  const token = getActiveToken();
   return token.length > 0;
 }
 
@@ -87,10 +100,10 @@ export async function convertVoiceWithReplicate(
   audioMimeType?: string,
   onProgress?: (status: string) => void
 ): Promise<Uint8Array> {
-  // Hard fail if token is missing or empty
-  const token = REPLICATE_API_TOKEN.trim();
+  // Hard fail if token is missing or empty (check runtime + env)
+  const token = getActiveToken();
   if (!token || token.length === 0) {
-    throw new Error('Replicate API token not configured. Please add VITE_REPLICATE_API_TOKEN to your .env file to enable AI voice conversion.');
+    throw new Error('Replicate API token not configured. Please configure your token in the app settings or add VITE_REPLICATE_API_TOKEN to your .env file to enable AI voice conversion.');
   }
 
   // Hard fail if model URL is missing
