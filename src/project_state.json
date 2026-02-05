@@ -1,11 +1,12 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
+  "projectStateVersion": 5,
   "summary": "Website for creating AI song covers using RVC-style voice conversion, including user-uploaded voice models and an audio conversion workflow.",
-  "architectural_notes": [],
+  "architectural_notes": [
+    "Voice model upload should accept .zip archives in addition to raw model files; define how archives are validated and whether they are stored as-is or unpacked server-side."
+  ],
   "known_issues": [],
   "isFixRequest": false,
-  "imageRequirements": "## Required Images\n- Minimalist monochrome wordmark logo reading \"RVC Covers\" (rvc-covers-logo.dim_512x256.png)\n- Stylized studio/microphone illustration with warm dark theme accents (studio-illustration.dim_1600x900.png)\n- Three simple line icons: upload, waveform, download (rvc-icons-set.dim_512x512.png)",
   "existing_features": [
     {
       "id": "feature-create-core-app-structure-and-navigation-for-an-rvc-style-website-with-pages-for-a-voice-models-upload-manage-b-create-cover-upload-source-audio-pick-model-submit-and-c-jobs-history-view-past-conversions-and-download-results",
@@ -105,6 +106,12 @@
       "reqIds": [
         "REQ-7"
       ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Support uploading voice models as .zip files (accept zip in the Voice Models upload flow and handle validation/unpacking as needed)",
+      "reqIds": [],
       "status": "pending"
     }
   ],

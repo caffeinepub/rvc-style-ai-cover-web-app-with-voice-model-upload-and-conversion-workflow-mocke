@@ -1,13 +1,13 @@
 import { useState } from 'react';
+import { useCreateConversionJob } from '../hooks/useConversionJobs';
+import ModelSelect from './ModelSelect';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Upload, Loader2 } from 'lucide-react';
+import { Music, Loader2 } from 'lucide-react';
 import InlineAlert from './InlineAlert';
-import ModelSelect from './ModelSelect';
-import { useCreateConversionJob } from '../hooks/useConversionJobs';
 import { fileToBytes } from '../utils/fileToBytes';
 
 export default function AudioUploadAndSubmit() {
@@ -52,7 +52,8 @@ export default function AudioUploadAndSubmit() {
       setSelectedModelId('');
       setAudioFile(null);
       setUploadProgress(0);
-      
+
+      // Reset file input
       const fileInput = document.getElementById('audio-file') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
     } catch (err: any) {
@@ -60,14 +61,14 @@ export default function AudioUploadAndSubmit() {
     }
   };
 
-  const isSubmitting = createJobMutation.isPending;
+  const isProcessing = createJobMutation.isPending;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Create AI Cover</CardTitle>
+        <CardTitle>Upload Audio</CardTitle>
         <CardDescription>
-          Select a voice model and upload your source audio to create an AI cover
+          Select a voice model and upload an audio file to create an AI cover
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -75,16 +76,16 @@ export default function AudioUploadAndSubmit() {
           <ModelSelect
             value={selectedModelId}
             onChange={setSelectedModelId}
-            disabled={isSubmitting}
+            disabled={isProcessing}
           />
 
           <div className="space-y-2">
-            <Label htmlFor="audio-file">Source Audio *</Label>
+            <Label htmlFor="audio-file">Audio File *</Label>
             <Input
               id="audio-file"
               type="file"
               onChange={handleFileChange}
-              disabled={isSubmitting}
+              disabled={isProcessing}
               accept="audio/*,.mp3,.wav,.flac,.m4a,.ogg"
             />
             {audioFile && (
@@ -94,7 +95,7 @@ export default function AudioUploadAndSubmit() {
             )}
           </div>
 
-          {isSubmitting && uploadProgress > 0 && (
+          {isProcessing && uploadProgress > 0 && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Uploading...</span>
@@ -109,20 +110,20 @@ export default function AudioUploadAndSubmit() {
           {createJobMutation.isSuccess && (
             <InlineAlert
               variant="success"
-              message="Conversion job created! Processing will begin shortly. Check the Jobs page for status."
+              message="Conversion job created! Check the Jobs page to track progress."
             />
           )}
 
-          <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? (
+          <Button type="submit" disabled={isProcessing} className="w-full">
+            {isProcessing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Creating Job...
               </>
             ) : (
               <>
-                <Upload className="mr-2 h-4 w-4" />
-                Create Cover
+                <Music className="mr-2 h-4 w-4" />
+                Create AI Cover
               </>
             )}
           </Button>
@@ -131,4 +132,3 @@ export default function AudioUploadAndSubmit() {
     </Card>
   );
 }
-

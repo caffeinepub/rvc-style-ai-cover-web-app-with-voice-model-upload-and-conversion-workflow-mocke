@@ -1,5 +1,7 @@
 import { useGetVoiceModels } from './useVoiceModels';
-import type { VoiceModelId } from '../backend';
+
+// Temporary stub type until backend is restored
+type VoiceModelId = bigint;
 
 export function useModelNameLookup() {
   const { data: models } = useGetVoiceModels();
@@ -10,4 +12,3 @@ export function useModelNameLookup() {
     return model?.metadata.name || 'Unknown Model';
   };
 }
-

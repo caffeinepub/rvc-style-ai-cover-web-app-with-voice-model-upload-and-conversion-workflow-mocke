@@ -108,7 +108,7 @@ export default function VoiceModelUploadForm() {
               id="model-format"
               value={format}
               onChange={(e) => setFormat(e.target.value)}
-              placeholder="e.g., pth, onnx (optional)"
+              placeholder="e.g., pth, onnx, zip (optional)"
               disabled={isUploading}
             />
           </div>
@@ -120,7 +120,7 @@ export default function VoiceModelUploadForm() {
               type="file"
               onChange={handleFileChange}
               disabled={isUploading}
-              accept=".pth,.onnx,.pt,.bin"
+              accept=".pth,.onnx,.pt,.bin,.zip"
             />
             {file && (
               <p className="text-sm text-muted-foreground">
@@ -163,4 +163,3 @@ export default function VoiceModelUploadForm() {
     </Card>
   );
 }
-

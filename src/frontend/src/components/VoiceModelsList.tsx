@@ -1,6 +1,7 @@
 import { useGetVoiceModels, useDeleteVoiceModel } from '../hooks/useVoiceModels';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,49 +13,55 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Trash2, Music, Loader2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import InlineAlert from './InlineAlert';
+import { Trash2, Calendar } from 'lucide-react';
 
 export default function VoiceModelsList() {
-  const { data: models, isLoading, error } = useGetVoiceModels();
+  const { data: models, isLoading } = useGetVoiceModels();
   const deleteMutation = useDeleteVoiceModel();
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="animate-pulse">
+            <CardHeader>
+              <div className="h-6 bg-muted rounded w-3/4 mb-2" />
+              <div className="h-4 bg-muted rounded w-full" />
+            </CardHeader>
+          </Card>
+        ))}
       </div>
     );
-  }
-
-  if (error) {
-    return <InlineAlert variant="destructive" message="Failed to load voice models" />;
   }
 
   if (!models || models.length === 0) {
     return null;
   }
 
+  const handleDelete = async (modelId: bigint) => {
+    await deleteMutation.mutateAsync(modelId);
+  };
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-semibold">Your Voice Models</h2>
+    <div>
+      <h2 className="text-2xl font-semibold mb-4">Your Models</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {models.map((model) => (
-          <Card key={model.id.toString()} className="relative">
+          <Card key={model.id.toString()}>
             <CardHeader>
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <Music className="h-5 w-5 text-primary flex-shrink-0" />
-                  <CardTitle className="text-lg truncate">{model.metadata.name}</CardTitle>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-lg">{model.metadata.name}</CardTitle>
+                  <CardDescription className="mt-1">
+                    {model.metadata.description || 'No description'}
+                  </CardDescription>
                 </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 flex-shrink-0"
+                      className="text-destructive hover:text-destructive"
                       disabled={deleteMutation.isPending}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -64,13 +71,14 @@ export default function VoiceModelsList() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Voice Model</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete "{model.metadata.name}"? This action cannot be undone.
+                        Are you sure you want to delete "{model.metadata.name}"? This action cannot be
+                        undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={() => deleteMutation.mutate(model.id)}
+                        onClick={() => handleDelete(model.id)}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
                         Delete
@@ -79,16 +87,18 @@ export default function VoiceModelsList() {
                   </AlertDialogContent>
                 </AlertDialog>
               </div>
-              {model.metadata.description && (
-                <CardDescription className="line-clamp-2">{model.metadata.description}</CardDescription>
-              )}
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between text-sm">
-                <Badge variant="secondary">{model.metadata.format}</Badge>
-                <span className="text-muted-foreground">
-                  {formatDistanceToNow(new Date(Number(model.createdAt) / 1000000), { addSuffix: true })}
-                </span>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">{model.metadata.format}</Badge>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Calendar className="h-3 w-3" />
+                  <span>
+                    {new Date(Number(model.createdAt) / 1000000).toLocaleDateString()}
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -97,4 +107,3 @@ export default function VoiceModelsList() {
     </div>
   );
 }
-
