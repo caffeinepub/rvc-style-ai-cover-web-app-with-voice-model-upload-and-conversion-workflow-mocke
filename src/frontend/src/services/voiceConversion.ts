@@ -14,7 +14,8 @@ interface ReplicateResponse {
  * Check if Replicate API token is configured
  */
 export function isReplicateConfigured(): boolean {
-  return !!REPLICATE_API_TOKEN && REPLICATE_API_TOKEN.trim().length > 0;
+  const token = REPLICATE_API_TOKEN.trim();
+  return token.length > 0;
 }
 
 /**
@@ -22,7 +23,6 @@ export function isReplicateConfigured(): boolean {
  */
 function bytesToDataURL(bytes: Uint8Array, mimeType: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    // Create a new Uint8Array to ensure we have a proper ArrayBuffer
     const safeBytes = new Uint8Array(bytes);
     const blob = new Blob([safeBytes], { type: mimeType });
     const reader = new FileReader();
@@ -64,7 +64,7 @@ function normalizeFetchError(error: unknown, step: string, response?: Response):
   if (error instanceof TypeError) {
     // Network/CORS errors before HTTP response
     return new Error(
-      `Network request failed while ${step}. Check your connection and that the Replicate API token is configured.`
+      `Network request failed while ${step}. Check your connection and verify the Replicate API token is configured correctly.`
     );
   }
   
@@ -87,8 +87,9 @@ export async function convertVoiceWithReplicate(
   audioMimeType?: string,
   onProgress?: (status: string) => void
 ): Promise<Uint8Array> {
-  // Hard fail if token is missing
-  if (!REPLICATE_API_TOKEN) {
+  // Hard fail if token is missing or empty
+  const token = REPLICATE_API_TOKEN.trim();
+  if (!token || token.length === 0) {
     throw new Error('Replicate API token not configured. Please add VITE_REPLICATE_API_TOKEN to your .env file to enable AI voice conversion.');
   }
 
@@ -117,7 +118,7 @@ export async function convertVoiceWithReplicate(
       response = await fetch('https://api.replicate.com/v1/predictions', {
         method: 'POST',
         headers: {
-          'Authorization': `Token ${REPLICATE_API_TOKEN}`,
+          'Authorization': `Token ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -147,7 +148,7 @@ export async function convertVoiceWithReplicate(
     console.log('[Voice Conversion] Prediction created:', prediction.id);
     
     // Poll for completion
-    const result = await pollPrediction(prediction.id, onProgress);
+    const result = await pollPrediction(prediction.id, token, onProgress);
     
     // Extract audio URL from output
     const audioURL = extractAudioURL(result.output);
@@ -187,6 +188,7 @@ let pollAttemptCount = 0;
 
 async function pollPrediction(
   predictionId: string,
+  token: string,
   onProgress?: (status: string) => void,
   maxAttempts = 60
 ): Promise<ReplicateResponse> {
@@ -201,7 +203,7 @@ async function pollPrediction(
     try {
       response = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
         headers: {
-          'Authorization': `Token ${REPLICATE_API_TOKEN}`,
+          'Authorization': `Token ${token}`,
         },
       });
     } catch (error) {

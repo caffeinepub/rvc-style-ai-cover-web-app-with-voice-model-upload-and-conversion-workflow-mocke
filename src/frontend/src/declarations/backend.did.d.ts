@@ -68,6 +68,7 @@ export interface _SERVICE {
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'completeVoiceConversionJob' : ActorMethod<[string, ExternalBlob], undefined>,
   'deleteVoiceModel' : ActorMethod<[string], string>,
   'getAllConversionJobs' : ActorMethod<[], Array<ConversionJob>>,
   'getAllVoiceModels' : ActorMethod<[], Array<VoiceModel>>,

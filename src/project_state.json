@@ -4,45 +4,46 @@
   "summary": "New project",
   "architectural_notes": [],
   "known_issues": [
-    "\"Load failed\" error occurs when trying to make a cover (after deployment/build issues)."
+    "System is still \"acting up\" after Version 11 deployment; user requests a full rebuild from scratch."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-improve-error-handling-for-the-replicate-api-calls-used-during-cover-creation-so-that-generic-browser-network-errors-e-g-fetch-throwing-a-typeerror-that-surfaces-as-load-failed-are-caught-and-converted-into-a-clear-user-facing-error-message-that-includes-the-failing-step-create-prediction-poll-prediction-download-result-and-the-http-status-body-when-available",
-      "title": "Improve error handling for the Replicate API calls used during cover creation so that generic browser/network errors (e.g., fetch throwing a TypeError that surfaces as “Load failed”) are caught and converted into a clear, user-facing error message that includes the failing step (create prediction, poll prediction, download result) and the HTTP status/body when available.",
+      "id": "feature-rework-the-voice-conversion-job-lifecycle-so-a-job-is-only-marked-completed-when-the-frontend-uploads-the-converted-audio-output-instead-of-the-backend-auto-completing-jobs-on-a-timer",
+      "title": "Rework the voice conversion job lifecycle so a job is only marked completed when the frontend uploads the converted audio output, instead of the backend auto-completing jobs on a timer.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-a-preflight-configuration-check-on-the-create-cover-flow-to-detect-when-vite-replicate-api-token-is-missing-empty-at-runtime-and-block-submission-with-a-clear-on-page-error-explaining-that-ai-cover-creation-requires-a-replicate-api-token-and-how-to-configure-it-referencing-vite-replicate-api-token",
-      "title": "Add a preflight configuration check on the Create Cover flow to detect when `VITE_REPLICATE_API_TOKEN` is missing/empty at runtime and block submission with a clear on-page error explaining that AI cover creation requires a Replicate API token and how to configure it (referencing `VITE_REPLICATE_API_TOKEN`).",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-the-audio-mime-type-used-when-converting-uploaded-audio-bytes-to-a-data-url-is-derived-from-the-uploaded-file-with-safe-fallbacks-rather-than-always-using-audio-mpeg-to-reduce-conversion-failures-for-non-mp3-uploads",
-      "title": "Ensure the audio MIME type used when converting uploaded audio bytes to a data URL is derived from the uploaded file (with safe fallbacks) rather than always using `audio/mpeg`, to reduce conversion failures for non-MP3 uploads.",
+      "id": "feature-update-the-frontend-cover-creation-flow-to-run-replicate-conversion-first-and-then-finalize-the-job-by-uploading-the-converted-audio-to-the-backend-with-clear-step-by-step-progress-and-error-handling",
+      "title": "Update the frontend cover creation flow to run Replicate conversion first and then finalize the job by uploading the converted audio to the backend, with clear step-by-step progress and error handling.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-lightweight-diagnostic-logging-console-level-around-the-cover-creation-pipeline-to-help-identify-where-failures-occur-model-url-fetch-replicate-create-replicate-poll-result-download-backend-save-without-exposing-the-replicate-api-token-in-logs",
-      "title": "Add lightweight diagnostic logging (console-level) around the cover creation pipeline to help identify where failures occur (model URL fetch, Replicate create, Replicate poll, result download, backend save), without exposing the Replicate API token in logs.",
+      "id": "feature-make-replicate-token-configuration-robust-in-production-ensure-vite-replicate-api-token-is-actually-available-to-the-running-frontend-build-and-add-an-explicit-user-facing-warning-hard-block-when-it-is-missing-or-empty",
+      "title": "Make Replicate token configuration robust in production: ensure `VITE_REPLICATE_API_TOKEN` is actually available to the running frontend build, and add an explicit user-facing warning + hard block when it is missing or empty.",
       "reqIds": [
         "REQ-4"
       ],
       "version": 1
     }
   ],
-  "new_feature_requests": [],
-  "projectName": "Fix “Load failed” error when creating an AI cover",
+  "new_feature_requests": [
+    {
+      "id": "AR-2",
+      "summary": "Update backend job APIs to support the revised flow: (1) create a processing job with input audio, (2) complete an existing job by storing the converted output blob, and (3) enforce authorization so only the job creator can complete their job.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Rebuild the AI cover creation flow end-to-end to eliminate the current “acting up” behavior",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

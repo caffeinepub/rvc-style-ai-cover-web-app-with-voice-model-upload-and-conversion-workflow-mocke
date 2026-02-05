@@ -6,14 +6,11 @@ import Runtime "mo:core/Runtime";
 import Text "mo:core/Text";
 import Time "mo:core/Time";
 import Nat "mo:core/Nat";
+import Nat32 "mo:core/Nat32";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 import AccessControl "authorization/access-control";
-import Timer "mo:core/Timer";
-import Nat32 "mo:core/Nat32";
-
-
 
 actor {
   let accessControlState = AccessControl.initState();
@@ -117,8 +114,7 @@ actor {
       };
     };
 
-    let jobIdCounterNat32 = Nat32.fromNat(jobIdCounter);
-    let jobId = targetVoiceId.concat(jobIdCounterNat32.toText());
+    let jobId = targetVoiceId.concat(Nat32.fromNat(jobIdCounter).toText());
 
     jobIdCounter += 1;
 
@@ -133,31 +129,35 @@ actor {
     };
 
     conversionJobs.add(jobId, conversionJob);
-
-    // Trigger the update to completed after a delay
-    let _timerId = Timer.setTimer<system>(#seconds 1, func() : async () { completeJob(jobId) });
-
     jobId;
   };
 
-  // Internal function to complete the job after delay - NOT a public shared function
-  func completeJob(jobId : Text) : () {
+  public shared ({ caller }) func completeVoiceConversionJob(jobId : Text, outputBlob : Storage.ExternalBlob) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can complete jobs");
+    };
+
     switch (conversionJobs.get(jobId)) {
       case (?job) {
+        if (job.creator != caller) {
+          Runtime.trap("Unauthorized: Can only complete your own jobs");
+        };
         let updatedJob : ConversionJob = {
           creator = job.creator;
           sourceVoiceId = job.sourceVoiceId;
           targetVoiceId = job.targetVoiceId;
           inputVoiceAudio = job.inputVoiceAudio;
           status = #completed({
-            blob = job.inputVoiceAudio;
+            blob = outputBlob;
             processingTime = Time.now();
             uploadTime = Time.now();
           });
         };
         conversionJobs.add(jobId, updatedJob);
       };
-      case (null) {};
+      case (null) {
+        Runtime.trap("Job not found");
+      };
     };
   };
 

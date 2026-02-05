@@ -1,4 +1,68 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-rework-the-voice-conversion-job-lifecycle-so-a-job-is-only-marked-completed-when-the-frontend-uploads-the-converted-audio-output-instead-of-the-backend-auto-completing-jobs-on-a-timer",
+      "featureTitle": "Rework the voice conversion job lifecycle so a job is only marked completed when the frontend uploads the converted audio output, instead of the backend auto-completing jobs on a timer.",
+      "files": [
+        "frontend/src/hooks/useConversionJobs.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-frontend-cover-creation-flow-to-run-replicate-conversion-first-and-then-finalize-the-job-by-uploading-the-converted-audio-to-the-backend-with-clear-step-by-step-progress-and-error-handling",
+      "featureTitle": "Update the frontend cover creation flow to run Replicate conversion first and then finalize the job by uploading the converted audio to the backend, with clear step-by-step progress and error handling.",
+      "files": [
+        "frontend/src/hooks/useConversionJobs.ts",
+        "frontend/src/services/voiceConversion.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-make-replicate-token-configuration-robust-in-production-ensure-vite-replicate-api-token-is-actually-available-to-the-running-frontend-build-and-add-an-explicit-user-facing-warning-hard-block-when-it-is-missing-or-empty",
+      "featureTitle": "Make Replicate token configuration robust in production: ensure `VITE_REPLICATE_API_TOKEN` is actually available to the running frontend build, and add an explicit user-facing warning + hard block when it is missing or empty.",
+      "files": [
+        "frontend/.env",
+        "frontend/.env.example",
+        "frontend/src/services/voiceConversion.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

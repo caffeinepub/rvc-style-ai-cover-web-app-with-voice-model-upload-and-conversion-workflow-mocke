@@ -1,12 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Prevent the vague “Load failed” error during AI cover creation by adding clear, step-specific errors, basic configuration checks, and safer audio upload handling.
+**Goal:** Rebuild the end-to-end AI cover creation job flow so jobs only complete after the frontend uploads the converted audio output, eliminating the current “acting up” behavior.
 
 **Planned changes:**
-- Add improved error handling around Replicate API calls in the cover creation flow, converting fetch/network and HTTP errors into clear, user-facing messages that identify the failing step (create prediction, poll prediction, download result) and include HTTP status/response text when available.
-- Add a preflight configuration check on the Create Cover page to detect a missing/empty `VITE_REPLICATE_API_TOKEN`, block submission, and show an on-page explanation for how to configure it.
-- Use the uploaded audio file’s MIME type (with safe fallbacks) when converting audio bytes to a data URL, instead of always using `audio/mpeg`.
-- Add lightweight console-level diagnostic logging across the cover creation pipeline (model URL fetch, Replicate create/poll, result download, backend save) without logging the Replicate API token and without excessive poll spam.
+- Rework the backend job lifecycle to stop timer-based auto-completion and instead support explicitly completing a job by attaching the converted output audio blob (with timestamps).
+- Update backend APIs to (1) create a processing job with input audio, (2) complete an existing job with the converted output, and (3) enforce that only the job creator can complete their job.
+- Update the frontend cover creation flow to run Replicate conversion first, then upload/save the converted output to complete the job, with clear step-by-step progress and English error handling + retry paths.
+- Make Replicate token configuration robust in production by ensuring `VITE_REPLICATE_API_TOKEN` is present in the built frontend and blocking conversion with a prominent warning when missing/empty.
 
-**User-visible outcome:** When cover creation fails, users see a clear, actionable error message indicating which step failed (and HTTP details when available), they are warned and blocked if the Replicate token is not configured, and non-MP3 uploads are less likely to fail during conversion.
+**User-visible outcome:** Users can submit an AI cover conversion and see the job remain in “processing” until conversion finishes and the converted audio is successfully saved; completed jobs play/download the converted output and show clear progress and errors (including a hard block if the Replicate token is not configured).

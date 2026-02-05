@@ -56,6 +56,7 @@ export enum UserRole {
 }
 export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    completeVoiceConversionJob(jobId: string, outputBlob: ExternalBlob): Promise<void>;
     deleteVoiceModel(id: string): Promise<string>;
     getAllConversionJobs(): Promise<Array<ConversionJob>>;
     getAllVoiceModels(): Promise<Array<VoiceModel>>;
