@@ -4,37 +4,37 @@
   "summary": "New project",
   "architectural_notes": [],
   "known_issues": [
-    "Audio flow/integration is not playing the model-voiced output (model audio output not heard)."
+    "\"Load failed\" error occurs when trying to make a cover (after deployment/build issues)."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-scrap-and-rebuild-the-client-side-voice-conversion-integration-so-it-reliably-produces-and-saves-audio-that-uses-the-selected-voice-model-s-voice-no-silent-fallback-to-returning-the-original-audio",
-      "title": "Scrap and rebuild the client-side voice conversion integration so it reliably produces (and saves) audio that uses the selected voice model’s voice (no silent fallback to returning the original audio).",
+      "id": "feature-improve-error-handling-for-the-replicate-api-calls-used-during-cover-creation-so-that-generic-browser-network-errors-e-g-fetch-throwing-a-typeerror-that-surfaces-as-load-failed-are-caught-and-converted-into-a-clear-user-facing-error-message-that-includes-the-failing-step-create-prediction-poll-prediction-download-result-and-the-http-status-body-when-available",
+      "title": "Improve error handling for the Replicate API calls used during cover creation so that generic browser/network errors (e.g., fetch throwing a TypeError that surfaces as “Load failed”) are caught and converted into a clear, user-facing error message that includes the failing step (create prediction, poll prediction, download result) and the HTTP status/body when available.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-the-conversion-pipeline-to-pass-the-selected-voice-model-s-actual-data-url-into-the-replicate-conversion-call-by-retrieving-the-selected-model-from-the-backend-and-using-its-externalblob-direct-url-as-the-model-input-for-conversion",
-      "title": "Update the conversion pipeline to pass the selected voice model’s actual data URL into the Replicate conversion call by retrieving the selected model from the backend and using its ExternalBlob direct URL as the model input for conversion.",
+      "id": "feature-add-a-preflight-configuration-check-on-the-create-cover-flow-to-detect-when-vite-replicate-api-token-is-missing-empty-at-runtime-and-block-submission-with-a-clear-on-page-error-explaining-that-ai-cover-creation-requires-a-replicate-api-token-and-how-to-configure-it-referencing-vite-replicate-api-token",
+      "title": "Add a preflight configuration check on the Create Cover flow to detect when `VITE_REPLICATE_API_TOKEN` is missing/empty at runtime and block submission with a clear on-page error explaining that AI cover creation requires a Replicate API token and how to configure it (referencing `VITE_REPLICATE_API_TOKEN`).",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-rebuild-frontend-audio-playback-for-completed-jobs-to-be-robust-across-browsers-by-creating-a-blob-objecturl-for-preview-instead-of-relying-solely-on-playing-the-externalblob-direct-url-and-ensure-playback-state-and-cleanup-are-handled-correctly",
-      "title": "Rebuild frontend audio playback for completed jobs to be robust across browsers by creating a Blob/ObjectURL for preview (instead of relying solely on playing the ExternalBlob direct URL), and ensure playback state and cleanup are handled correctly.",
+      "id": "feature-ensure-the-audio-mime-type-used-when-converting-uploaded-audio-bytes-to-a-data-url-is-derived-from-the-uploaded-file-with-safe-fallbacks-rather-than-always-using-audio-mpeg-to-reduce-conversion-failures-for-non-mp3-uploads",
+      "title": "Ensure the audio MIME type used when converting uploaded audio bytes to a data URL is derived from the uploaded file (with safe fallbacks) rather than always using `audio/mpeg`, to reduce conversion failures for non-MP3 uploads.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
     },
     {
-      "id": "feature-replace-the-current-replicate-request-response-handling-with-a-robust-implementation-that-can-handle-common-replicate-output-shapes-and-avoids-unsafe-base64-conversions-that-can-corrupt-large-audio-files",
-      "title": "Replace the current Replicate request/response handling with a robust implementation that can handle common Replicate output shapes and avoids unsafe base64 conversions that can corrupt large audio files.",
+      "id": "feature-add-lightweight-diagnostic-logging-console-level-around-the-cover-creation-pipeline-to-help-identify-where-failures-occur-model-url-fetch-replicate-create-replicate-poll-result-download-backend-save-without-exposing-the-replicate-api-token-in-logs",
+      "title": "Add lightweight diagnostic logging (console-level) around the cover creation pipeline to help identify where failures occur (model URL fetch, Replicate create, Replicate poll, result download, backend save), without exposing the Replicate API token in logs.",
       "reqIds": [
         "REQ-4"
       ],
@@ -42,7 +42,7 @@
     }
   ],
   "new_feature_requests": [],
-  "projectName": "Rebuild voice conversion so completed jobs play the actual model-voiced output",
+  "projectName": "Fix “Load failed” error when creating an AI cover",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

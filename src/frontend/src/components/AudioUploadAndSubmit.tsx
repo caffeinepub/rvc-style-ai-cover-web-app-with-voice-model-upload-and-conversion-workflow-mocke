@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Music, Loader2, Sparkles } from 'lucide-react';
+import { Music, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import InlineAlert from './InlineAlert';
 import { fileToBytes } from '../utils/fileToBytes';
+import { isReplicateConfigured } from '../services/voiceConversion';
 
 export default function AudioUploadAndSubmit() {
   const [selectedModelId, setSelectedModelId] = useState('');
@@ -18,6 +19,7 @@ export default function AudioUploadAndSubmit() {
   const [processingStatus, setProcessingStatus] = useState<string>('');
 
   const createJobMutation = useCreateConversionJob();
+  const replicateConfigured = isReplicateConfigured();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -48,6 +50,12 @@ export default function AudioUploadAndSubmit() {
     setUploadProgress(0);
     setProcessingStatus('');
 
+    // Preflight check for Replicate token
+    if (!replicateConfigured) {
+      setError('Replicate API token is not configured. Please add VITE_REPLICATE_API_TOKEN to your .env file to enable AI voice conversion.');
+      return;
+    }
+
     if (!selectedModelId) {
       setError('Please select a voice model');
       return;
@@ -61,9 +69,13 @@ export default function AudioUploadAndSubmit() {
     try {
       const bytes = await fileToBytes(audioFile);
       
+      // Pass the file's MIME type (with fallback)
+      const mimeType = audioFile.type || 'application/octet-stream';
+      
       await createJobMutation.mutateAsync({
         modelId: selectedModelId,
         audioFile: bytes,
+        audioMimeType: mimeType,
         onProgress: (percentage) => {
           setUploadProgress(percentage);
         },
@@ -103,11 +115,19 @@ export default function AudioUploadAndSubmit() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {!replicateConfigured && (
+          <InlineAlert
+            variant="destructive"
+            message="AI cover creation requires a Replicate API token. Please add VITE_REPLICATE_API_TOKEN to your .env file."
+            className="mb-4"
+          />
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <ModelSelect
             value={selectedModelId}
             onChange={handleModelChange}
-            disabled={isProcessing}
+            disabled={isProcessing || !replicateConfigured}
           />
 
           <div className="space-y-2">
@@ -116,7 +136,7 @@ export default function AudioUploadAndSubmit() {
               id="audio-file"
               type="file"
               onChange={handleFileChange}
-              disabled={isProcessing}
+              disabled={isProcessing || !replicateConfigured}
               accept="audio/*,.mp3,.wav,.flac,.m4a,.ogg"
             />
             {audioFile && (
@@ -145,11 +165,16 @@ export default function AudioUploadAndSubmit() {
             />
           )}
 
-          <Button type="submit" disabled={isProcessing} className="w-full">
+          <Button type="submit" disabled={isProcessing || !replicateConfigured} className="w-full">
             {isProcessing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Converting Voice...
+              </>
+            ) : !replicateConfigured ? (
+              <>
+                <AlertCircle className="mr-2 h-4 w-4" />
+                API Token Required
               </>
             ) : (
               <>

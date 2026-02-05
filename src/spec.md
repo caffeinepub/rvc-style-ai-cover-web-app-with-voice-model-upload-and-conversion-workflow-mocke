@@ -1,13 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Ensure voice conversion jobs reliably generate, save, and play the selected model’s converted audio (never silently falling back to the original audio).
+**Goal:** Prevent the vague “Load failed” error during AI cover creation by adding clear, step-specific errors, basic configuration checks, and safer audio upload handling.
 
 **Planned changes:**
-- Rebuild the client-side Replicate voice conversion flow to fail fast with clear UI errors when Replicate is not configured or conversion fails, and to prevent creating “completed” jobs containing unconverted/original audio.
-- Update the conversion pipeline to resolve the user-selected model via the backend and pass its concrete model resource URL (derived from the stored model blob’s direct URL) into the Replicate conversion request.
-- Store the downloaded converted audio bytes as the backend job’s completed blob so preview/download always uses the converted result.
-- Rebuild completed-job audio preview to use a Blob/ObjectURL for playback (with correct play/stop toggling, cleanup via URL revocation, and user-facing playback errors).
-- Replace Replicate request/response handling with robust output parsing (string URL vs list of URLs), safe binary handling for large audio (no unsafe base64 conversions), and UI status updates that reflect polling states and only complete after the converted audio is persisted.
+- Add improved error handling around Replicate API calls in the cover creation flow, converting fetch/network and HTTP errors into clear, user-facing messages that identify the failing step (create prediction, poll prediction, download result) and include HTTP status/response text when available.
+- Add a preflight configuration check on the Create Cover page to detect a missing/empty `VITE_REPLICATE_API_TOKEN`, block submission, and show an on-page explanation for how to configure it.
+- Use the uploaded audio file’s MIME type (with safe fallbacks) when converting audio bytes to a data URL, instead of always using `audio/mpeg`.
+- Add lightweight console-level diagnostic logging across the cover creation pipeline (model URL fetch, Replicate create/poll, result download, backend save) without logging the Replicate API token and without excessive poll spam.
 
-**User-visible outcome:** Submitting audio with a selected model produces a completed job whose preview/download plays the actual model-converted output, with clear errors shown if Replicate/model resolution/conversion/playback fails.
+**User-visible outcome:** When cover creation fails, users see a clear, actionable error message indicating which step failed (and HTTP details when available), they are warned and blocked if the Replicate token is not configured, and non-MP3 uploads are less likely to fail during conversion.

@@ -11,6 +11,13 @@ interface ReplicateResponse {
 }
 
 /**
+ * Check if Replicate API token is configured
+ */
+export function isReplicateConfigured(): boolean {
+  return !!REPLICATE_API_TOKEN && REPLICATE_API_TOKEN.trim().length > 0;
+}
+
+/**
  * Convert audio bytes to a data URL safely without stack overflow
  */
 function bytesToDataURL(bytes: Uint8Array, mimeType: string): Promise<string> {
@@ -50,9 +57,34 @@ function extractAudioURL(output: string | string[] | undefined): string {
   throw new Error('Invalid output format from Replicate');
 }
 
+/**
+ * Normalize fetch errors into user-friendly messages with step context
+ */
+function normalizeFetchError(error: unknown, step: string, response?: Response): Error {
+  if (error instanceof TypeError) {
+    // Network/CORS errors before HTTP response
+    return new Error(
+      `Network request failed while ${step}. Check your connection and that the Replicate API token is configured.`
+    );
+  }
+  
+  if (response && !response.ok) {
+    return new Error(
+      `Failed ${step} (HTTP ${response.status})`
+    );
+  }
+  
+  if (error instanceof Error) {
+    return new Error(`Error ${step}: ${error.message}`);
+  }
+  
+  return new Error(`Unknown error ${step}`);
+}
+
 export async function convertVoiceWithReplicate(
   audioFile: Uint8Array,
   voiceModelUrl: string,
+  audioMimeType?: string,
   onProgress?: (status: string) => void
 ): Promise<Uint8Array> {
   // Hard fail if token is missing
@@ -65,94 +97,142 @@ export async function convertVoiceWithReplicate(
     throw new Error('Voice model URL is required for conversion');
   }
 
+  console.log('[Voice Conversion] Starting conversion pipeline');
+  console.log('[Voice Conversion] Model URL:', voiceModelUrl);
+  console.log('[Voice Conversion] Audio size:', audioFile.length, 'bytes');
+  console.log('[Voice Conversion] Audio MIME type:', audioMimeType || 'audio/mpeg (default)');
+
   try {
     if (onProgress) onProgress('starting');
 
-    // Convert audio bytes to data URL safely
-    const audioDataUri = await bytesToDataURL(audioFile, 'audio/mpeg');
+    // Convert audio bytes to data URL safely with proper MIME type
+    const mimeType = audioMimeType || 'application/octet-stream';
+    console.log('[Voice Conversion] Converting audio to data URL with MIME type:', mimeType);
+    const audioDataUri = await bytesToDataURL(audioFile, mimeType);
 
     // Use Replicate's RVC model
-    // Using the public RVC model: https://replicate.com/zsxkib/realistic-voice-cloning
-    const response = await fetch('https://api.replicate.com/v1/predictions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Token ${REPLICATE_API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        version: '0a9c7c558af4c0f20667c1bd1260ce32a2879944a0b9e44e1398660c077b1550',
-        input: {
-          song_input: audioDataUri,
-          rvc_model: voiceModelUrl,
-          pitch_change: 0,
-          index_rate: 0.5,
-          filter_radius: 3,
-          rms_mix_rate: 0.25,
-          protect: 0.33,
+    console.log('[Voice Conversion] Creating Replicate prediction...');
+    let response: Response;
+    try {
+      response = await fetch('https://api.replicate.com/v1/predictions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${REPLICATE_API_TOKEN}`,
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          version: '0a9c7c558af4c0f20667c1bd1260ce32a2879944a0b9e44e1398660c077b1550',
+          input: {
+            song_input: audioDataUri,
+            rvc_model: voiceModelUrl,
+            pitch_change: 0,
+            index_rate: 0.5,
+            filter_radius: 3,
+            rms_mix_rate: 0.25,
+            protect: 0.33,
+          },
+        }),
+      });
+    } catch (error) {
+      throw normalizeFetchError(error, 'contacting Replicate API');
+    }
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Replicate API error (${response.status}): ${errorText}`);
+      const errorText = await response.text().catch(() => 'Unable to read error response');
+      console.error('[Voice Conversion] Replicate API error:', response.status, errorText);
+      throw new Error(`Failed to create prediction (HTTP ${response.status}): ${errorText}`);
     }
 
     const prediction: ReplicateResponse = await response.json();
+    console.log('[Voice Conversion] Prediction created:', prediction.id);
     
     // Poll for completion
     const result = await pollPrediction(prediction.id, onProgress);
     
     // Extract audio URL from output
     const audioURL = extractAudioURL(result.output);
+    console.log('[Voice Conversion] Conversion succeeded, downloading result from:', audioURL);
 
     if (onProgress) onProgress('downloading');
 
     // Download the converted audio
-    const audioResponse = await fetch(audioURL);
+    let audioResponse: Response;
+    try {
+      audioResponse = await fetch(audioURL);
+    } catch (error) {
+      throw normalizeFetchError(error, 'downloading converted audio');
+    }
+
     if (!audioResponse.ok) {
-      throw new Error(`Failed to download converted audio (${audioResponse.status})`);
+      console.error('[Voice Conversion] Download failed:', audioResponse.status);
+      throw new Error(`Failed to download converted audio (HTTP ${audioResponse.status})`);
     }
 
     const audioBlob = await audioResponse.blob();
     const arrayBuffer = await audioBlob.arrayBuffer();
     
+    console.log('[Voice Conversion] Download complete, size:', arrayBuffer.byteLength, 'bytes');
+    
     if (onProgress) onProgress('succeeded');
     
     return new Uint8Array(arrayBuffer);
   } catch (error) {
-    console.error('Voice conversion error:', error);
+    console.error('[Voice Conversion] Pipeline failed:', error);
     throw error;
   }
 }
+
+let lastLoggedStatus: string | null = null;
+let pollAttemptCount = 0;
 
 async function pollPrediction(
   predictionId: string,
   onProgress?: (status: string) => void,
   maxAttempts = 60
 ): Promise<ReplicateResponse> {
+  console.log('[Voice Conversion] Starting to poll prediction:', predictionId);
+  lastLoggedStatus = null;
+  pollAttemptCount = 0;
+
   for (let i = 0; i < maxAttempts; i++) {
-    const response = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
-      headers: {
-        'Authorization': `Token ${REPLICATE_API_TOKEN}`,
-      },
-    });
+    pollAttemptCount++;
+    
+    let response: Response;
+    try {
+      response = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
+        headers: {
+          'Authorization': `Token ${REPLICATE_API_TOKEN}`,
+        },
+      });
+    } catch (error) {
+      throw normalizeFetchError(error, 'checking prediction status');
+    }
 
     if (!response.ok) {
-      throw new Error(`Failed to check prediction status (${response.status})`);
+      const errorText = await response.text().catch(() => 'Unable to read error response');
+      console.error('[Voice Conversion] Status check failed:', response.status, errorText);
+      throw new Error(`Failed to check prediction status (HTTP ${response.status}): ${errorText}`);
     }
 
     const prediction: ReplicateResponse = await response.json();
+    
+    // Log only on status changes to avoid spam
+    if (prediction.status !== lastLoggedStatus) {
+      console.log(`[Voice Conversion] Status changed to: ${prediction.status} (attempt ${pollAttemptCount})`);
+      lastLoggedStatus = prediction.status;
+    }
     
     if (onProgress) {
       onProgress(prediction.status);
     }
 
     if (prediction.status === 'succeeded') {
+      console.log('[Voice Conversion] Prediction succeeded after', pollAttemptCount, 'attempts');
       return prediction;
     }
 
     if (prediction.status === 'failed' || prediction.status === 'canceled') {
+      console.error('[Voice Conversion] Prediction failed/canceled:', prediction.error);
       throw new Error(prediction.error || `Voice conversion ${prediction.status}`);
     }
 
@@ -160,5 +240,6 @@ async function pollPrediction(
     await new Promise(resolve => setTimeout(resolve, 2000));
   }
 
+  console.error('[Voice Conversion] Polling timed out after', maxAttempts, 'attempts');
   throw new Error('Voice conversion timed out after 2 minutes');
 }

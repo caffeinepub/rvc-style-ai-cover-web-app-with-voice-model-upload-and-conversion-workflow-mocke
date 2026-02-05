@@ -1,89 +1,88 @@
 {
   "kind": "build_request",
-  "title": "Rebuild voice conversion so completed jobs play the actual model-voiced output",
+  "title": "Fix “Load failed” error when creating an AI cover",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Scrap and rebuild the client-side voice conversion integration so it reliably produces (and saves) audio that uses the selected voice model’s voice (no silent fallback to returning the original audio).",
+      "text": "Improve error handling for the Replicate API calls used during cover creation so that generic browser/network errors (e.g., fetch throwing a TypeError that surfaces as “Load failed”) are caught and converted into a clear, user-facing error message that includes the failing step (create prediction, poll prediction, download result) and the HTTP status/body when available.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages-4"
+          "msg-1"
         ],
         "quotes": [
-          "No. It’s still doing that thing where it’s just not playing the model with the output. Scrap the code for that and do it again."
+          "Ok, now it’s saying load failed when I try to make a cover, can you try and fix it?"
         ]
       },
       "acceptanceCriteria": [
-        "If Replicate is not configured (missing VITE_REPLICATE_API_TOKEN), the app must show a clear, user-facing error explaining what is missing and must not create a completed job with unconverted/original audio.",
-        "If Replicate conversion fails (API error, polling failure, invalid response), the app must show a clear, user-facing error and must not create a completed job containing unconverted/original audio.",
-        "The conversion request must be made using the voice model the user selected (not a hardcoded/default/undefined model input)."
+        "When Replicate POST /v1/predictions fails, the UI displays an InlineAlert/toast message that includes the HTTP status code and response text (when available).",
+        "When polling GET /v1/predictions/{id} fails, the UI displays an InlineAlert/toast message that indicates the status-check step failed and includes HTTP status code (when available).",
+        "When downloading the final output audio URL fails, the UI displays an InlineAlert/toast message that indicates the download step failed and includes HTTP status code (when available).",
+        "When fetch fails before an HTTP response is available (e.g., network/CORS), the UI displays a friendly message (in English) such as “Network request failed while contacting Replicate. Check your connection and that the Replicate API token is configured.” instead of a vague “Load failed”."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update the conversion pipeline to pass the selected voice model’s actual data URL into the Replicate conversion call by retrieving the selected model from the backend and using its ExternalBlob direct URL as the model input for conversion.",
-      "target": "both",
+      "text": "Add a preflight configuration check on the Create Cover flow to detect when `VITE_REPLICATE_API_TOKEN` is missing/empty at runtime and block submission with a clear on-page error explaining that AI cover creation requires a Replicate API token and how to configure it (referencing `VITE_REPLICATE_API_TOKEN`).",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages-4"
+          "msg-1"
         ],
         "quotes": [
-          "it’s just not playing the model with the output"
+          "Ok, now it’s saying load failed when I try to make a cover, can you try and fix it?"
         ]
       },
       "acceptanceCriteria": [
-        "When a user selects a model and submits audio, the frontend must resolve the selected model to a concrete model resource URL derived from the stored model blob (ExternalBlob.getDirectURL()), and use that URL in the conversion request.",
-        "If the selected model cannot be fetched / has no usable URL, the submit must fail with a clear error and must not create a job.",
-        "The created job in the backend must store the converted audio bytes as the completed job blob (i.e., preview/download uses the converted audio)."
+        "If `import.meta.env.VITE_REPLICATE_API_TOKEN` is empty, the Create Cover page shows an InlineAlert (destructive or info) explaining that the token is not configured and the submit button is disabled or submission is prevented with the same message.",
+        "If the token is present, the Create Cover page behaves as it does today (no additional blocking UI)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Rebuild frontend audio playback for completed jobs to be robust across browsers by creating a Blob/ObjectURL for preview (instead of relying solely on playing the ExternalBlob direct URL), and ensure playback state and cleanup are handled correctly.",
+      "text": "Ensure the audio MIME type used when converting uploaded audio bytes to a data URL is derived from the uploaded file (with safe fallbacks) rather than always using `audio/mpeg`, to reduce conversion failures for non-MP3 uploads.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages-4"
+          "msg-1"
         ],
         "quotes": [
-          "it’s just not playing the model with the output"
+          "Ok, now it’s saying load failed when I try to make a cover, can you try and fix it?"
         ]
       },
       "acceptanceCriteria": [
-        "Clicking “Preview” on a completed job must play audio that matches the job’s stored completed blob.",
-        "Stopping/starting preview must work reliably (second click stops, subsequent click restarts).",
-        "Any ObjectURLs created for preview must be revoked when no longer needed (on stop/end/unmount) to avoid leaks.",
-        "If playback fails, the UI must surface a user-facing error (not only console logs)."
+        "Uploading a WAV/M4A/OGG file uses the file’s MIME type (or an appropriate fallback like `application/octet-stream` when missing) when building the data URL sent to Replicate.",
+        "Existing MP3 upload flow continues to work."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Replace the current Replicate request/response handling with a robust implementation that can handle common Replicate output shapes and avoids unsafe base64 conversions that can corrupt large audio files.",
+      "text": "Add lightweight diagnostic logging (console-level) around the cover creation pipeline to help identify where failures occur (model URL fetch, Replicate create, Replicate poll, result download, backend save), without exposing the Replicate API token in logs.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages-4"
+          "msg-1"
+        ],
+        "quotes": [
+          "Ok, now it’s saying load failed when I try to make a cover, can you try and fix it?"
         ]
       },
       "acceptanceCriteria": [
-        "The code must not rely on `btoa(String.fromCharCode(...bytes))` for arbitrary-sized audio (it must use a safe approach that does not overflow call stacks or corrupt data).",
-        "The implementation must correctly handle Replicate `output` fields that may be a string URL or a list of URLs and choose the correct audio URL to download.",
-        "Progress/status updates shown in the UI must reflect Replicate polling states (starting/processing/succeeded/failed) and transition to completion only after the converted audio has been downloaded and stored."
+        "Console logs identify the current pipeline step and key non-secret metadata (e.g., job id, Replicate prediction id, statuses) and never print the token value.",
+        "Logs are present only in the cover creation path and do not significantly spam during normal use (e.g., poll logs are rate-limited or summarized)."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (read-only).",
-    "Do not edit immutable paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx.",
-    "Backend must remain single-actor with all Motoko logic in backend/main.mo; only add migration.mo if a state/schema upgrade is required."
+    "Frontend immutable paths must not be edited: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
+    "Backend must remain single-actor Motoko architecture (backend/main.mo); only add a migration file if existing stable state needs schema changes.",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Do not add new backend services or external databases.",
-    "Do not add third-party authentication providers (Internet Identity only).",
-    "Do not implement real-time streaming/audio via WebSockets.",
-    "Do not change the overall product scope beyond fixing the model-voiced output generation and playback reliability."
+    "Adding new third-party authentication providers (only Internet Identity is supported).",
+    "Moving Replicate calls to the backend (backend cannot call external APIs).",
+    "Adding real-time/WebSocket updates for job progress."
   ],
   "imageRequirements": {
     "required": [],

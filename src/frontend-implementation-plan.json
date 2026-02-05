@@ -1,100 +1,102 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Rebuild Replicate voice conversion to use selected model output and robust playback",
+  "title": "Fix Replicate cover creation “Load failed” errors with clearer UI messaging, config checks, MIME fixes, and diagnostics",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Rebuild client-side Replicate integration to reliably generate and save converted audio (never silently falling back to original audio).",
+      "summary": "Catch and normalize Replicate fetch/network failures into clear, step-specific user-facing errors with HTTP status/body when available.",
       "acceptanceCriteria": [
-        "If Replicate is not configured (missing VITE_REPLICATE_API_TOKEN), the app must show a clear, user-facing error explaining what is missing and must not create a completed job with unconverted/original audio.",
-        "If Replicate conversion fails (API error, polling failure, invalid response), the app must show a clear, user-facing error and must not create a completed job containing unconverted/original audio.",
-        "The conversion request must be made using the voice model the user selected (not a hardcoded/default/undefined model input)."
+        "When Replicate POST /v1/predictions fails, the UI displays an InlineAlert/toast message that includes the HTTP status code and response text (when available).",
+        "When polling GET /v1/predictions/{id} fails, the UI displays an InlineAlert/toast message that indicates the status-check step failed and includes HTTP status code (when available).",
+        "When downloading the final output audio URL fails, the UI displays an InlineAlert/toast message that indicates the download step failed and includes HTTP status code (when available).",
+        "When fetch fails before an HTTP response is available (e.g., network/CORS), the UI displays a friendly message (in English) such as “Network request failed while contacting Replicate. Check your connection and that the Replicate API token is configured.” instead of a vague “Load failed”."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useConversionJobs.ts",
-          "operation": "modify",
-          "description": "Remove the mock conversion fallback and restructure job creation so the backend job is created only after Replicate conversion succeeds; propagate clear user-facing errors when token is missing or conversion fails; ensure the selected model is always resolved and used for conversion input. Verify the component's usage instructions before implementing."
-        },
-        {
           "path": "frontend/src/services/voiceConversion.ts",
           "operation": "modify",
-          "description": "Scrap and rebuild Replicate request/poll/download logic to hard-fail when VITE_REPLICATE_API_TOKEN is missing, validate required inputs (including selected model URL), and return converted audio bytes only after a successful conversion. Verify the component's usage instructions before implementing."
+          "description": "Introduce step-aware error handling around Replicate calls (create prediction, poll prediction, download result): wrap fetch calls to capture HTTP status and response text when available; convert network/TypeError failures into a friendly, actionable message; and throw normalized Errors whose messages include the failing step and HTTP details (without exposing the token)."
+        },
+        {
+          "path": "frontend/src/hooks/useConversionJobs.ts",
+          "operation": "modify",
+          "description": "Ensure errors thrown from the Replicate conversion pipeline are surfaced consistently via existing toast/InlineAlert flows (preserve the improved step-aware messages from the service so the UI shows the correct failing step and any HTTP status/body details)."
         },
         {
           "path": "frontend/src/components/AudioUploadAndSubmit.tsx",
           "operation": "modify",
-          "description": "Update submit flow UI wiring to display clear conversion errors coming from the rebuilt conversion pipeline (no silent success state), and to reflect the updated progress/status callbacks. Verify the component's usage instructions before implementing."
+          "description": "Adjust error presentation, if needed, to prefer the normalized service error message for Replicate failures so users see the failing step (create/poll/download) and any available HTTP status/body rather than generic browser messages."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Resolve the selected voice model from the backend and pass its ExternalBlob direct URL into the Replicate conversion call; only create jobs with the converted audio blob.",
+      "summary": "Add a runtime preflight check for missing VITE_REPLICATE_API_TOKEN and block Create Cover submission with a clear on-page InlineAlert.",
       "acceptanceCriteria": [
-        "When a user selects a model and submits audio, the frontend must resolve the selected model to a concrete model resource URL derived from the stored model blob (ExternalBlob.getDirectURL()), and use that URL in the conversion request.",
-        "If the selected model cannot be fetched / has no usable URL, the submit must fail with a clear error and must not create a job.",
-        "The created job in the backend must store the converted audio bytes as the completed job blob (i.e., preview/download uses the converted audio)."
+        "If `import.meta.env.VITE_REPLICATE_API_TOKEN` is empty, the Create Cover page shows an InlineAlert (destructive or info) explaining that the token is not configured and the submit button is disabled or submission is prevented with the same message.",
+        "If the token is present, the Create Cover page behaves as it does today (no additional blocking UI)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useConversionJobs.ts",
-          "operation": "modify",
-          "description": "Before starting conversion, fetch the selected model via the backend actor, derive the model resource URL via model.audio.getDirectURL(), and pass that URL into the Replicate conversion call; if missing/invalid, fail with a clear error and do not create the job; ensure the ExternalBlob sent to makeVoiceConversionJob is constructed from the converted bytes (not original). Verify the component's usage instructions before implementing."
-        },
-        {
           "path": "frontend/src/services/voiceConversion.ts",
           "operation": "modify",
-          "description": "Require/consume the resolved model URL as the model input for Replicate conversion (no hardcoded/default/undefined model input). Verify the component's usage instructions before implementing."
+          "description": "Export a small runtime configuration helper (e.g., a boolean check) for whether `import.meta.env.VITE_REPLICATE_API_TOKEN` is present/non-empty so UI can preflight before starting conversion, while keeping token values out of logs and UI."
+        },
+        {
+          "path": "frontend/src/components/AudioUploadAndSubmit.tsx",
+          "operation": "modify",
+          "description": "Add a preflight check using `import.meta.env.VITE_REPLICATE_API_TOKEN` (or the helper from the voice conversion service). When missing/empty, render an InlineAlert explaining that AI cover creation requires `VITE_REPLICATE_API_TOKEN` and how to configure it, and disable/prevent submission with the same message."
+        },
+        {
+          "path": "frontend/src/pages/CreateCoverPage.tsx",
+          "operation": "modify",
+          "description": "Optionally surface the same token-missing InlineAlert near the page header (while still allowing navigation), ensuring the Create Cover flow is clearly blocked until `VITE_REPLICATE_API_TOKEN` is configured."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Rebuild completed-job audio preview to use Blob/ObjectURLs created from stored job bytes, with reliable play/stop behavior, cleanup, and UI error surfacing.",
+      "summary": "Use the uploaded file’s MIME type (with safe fallbacks) when converting audio bytes to a data URL for Replicate, instead of always audio/mpeg.",
       "acceptanceCriteria": [
-        "Clicking “Preview” on a completed job must play audio that matches the job’s stored completed blob.",
-        "Stopping/starting preview must work reliably (second click stops, subsequent click restarts).",
-        "Any ObjectURLs created for preview must be revoked when no longer needed (on stop/end/unmount) to avoid leaks.",
-        "If playback fails, the UI must surface a user-facing error (not only console logs)."
+        "Uploading a WAV/M4A/OGG file uses the file’s MIME type (or an appropriate fallback like `application/octet-stream` when missing) when building the data URL sent to Replicate.",
+        "Existing MP3 upload flow continues to work."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/JobStatusCard.tsx",
+          "path": "frontend/src/components/AudioUploadAndSubmit.tsx",
           "operation": "modify",
-          "description": "Replace direct-URL preview with a robust preview implementation that downloads the completed ExternalBlob bytes, creates a Blob/ObjectURL, plays via a managed HTMLAudioElement, supports toggle stop/restart, revokes ObjectURLs on stop/end/unmount, and surfaces playback errors via visible UI (e.g., InlineAlert and/or toast). Verify the component's usage instructions before implementing."
+          "description": "Capture the selected File’s MIME type (from `audioFile.type`, with fallbacks) and pass it along to the conversion job creation so the Replicate data-URL conversion can use the correct MIME type for non-MP3 uploads."
         },
         {
-          "path": "frontend/src/utils/downloadExternalBlob.ts",
+          "path": "frontend/src/hooks/useConversionJobs.ts",
           "operation": "modify",
-          "description": "Align blob handling patterns with the new preview approach (ObjectURL lifecycle and error handling), ensuring utility behavior remains safe and consistent for audio downloads. Verify the component's usage instructions before implementing."
+          "description": "Extend the create-job parameters to accept an audio MIME type (optional) and forward it to the Replicate conversion service so the service can build a data URL using the uploaded file’s MIME type."
+        },
+        {
+          "path": "frontend/src/services/voiceConversion.ts",
+          "operation": "modify",
+          "description": "Update data-URL conversion to accept a caller-provided MIME type and apply safe fallbacks (e.g., use provided type when present, otherwise `application/octet-stream`) instead of hardcoding `audio/mpeg`, while keeping the existing MP3 flow working."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Harden Replicate request/response handling to support common output shapes, safe data conversions for large audio, and accurate UI status progression tied to polling states and post-download completion.",
+      "summary": "Add lightweight, non-spammy console diagnostics for the cover creation pipeline steps without logging the Replicate token.",
       "acceptanceCriteria": [
-        "The code must not rely on `btoa(String.fromCharCode(...bytes))` for arbitrary-sized audio (it must use a safe approach that does not overflow call stacks or corrupt data).",
-        "The implementation must correctly handle Replicate `output` fields that may be a string URL or a list of URLs and choose the correct audio URL to download.",
-        "Progress/status updates shown in the UI must reflect Replicate polling states (starting/processing/succeeded/failed) and transition to completion only after the converted audio has been downloaded and stored."
+        "Console logs identify the current pipeline step and key non-secret metadata (e.g., job id, Replicate prediction id, statuses) and never print the token value.",
+        "Logs are present only in the cover creation path and do not significantly spam during normal use (e.g., poll logs are rate-limited or summarized)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/services/voiceConversion.ts",
           "operation": "modify",
-          "description": "Implement safe bytes-to-data-URL conversion via Blob/FileReader (or equivalent safe approach) instead of `btoa(String.fromCharCode(...))`; update response typing/handling to support `output` as string or list and select the appropriate audio URL; provide explicit status callbacks for polling phases and only report completion after the converted audio has been downloaded into bytes. Verify the component's usage instructions before implementing."
+          "description": "Add console-level diagnostic logs for key Replicate steps (model URL usage, create prediction, poll prediction status changes, download result) including non-secret metadata (prediction id, status transitions, attempt counts). Rate-limit/summarize polling logs (e.g., log only on status changes or every N attempts), and ensure no logs include the Replicate token."
         },
         {
           "path": "frontend/src/hooks/useConversionJobs.ts",
           "operation": "modify",
-          "description": "Wire Replicate polling statuses into UI-facing progress/status updates (starting/processing/succeeded/failed), and only mark the mutation as successful after the converted audio bytes are downloaded and the job has been created in the backend; ensure failures do not create a job. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/AudioUploadAndSubmit.tsx",
-          "operation": "modify",
-          "description": "Update progress/status rendering to reflect Replicate polling states from the rebuilt conversion pipeline, and ensure the UI only shows success after the job is truly created with converted audio. Verify the component's usage instructions before implementing."
+          "description": "Add step-level diagnostic logs around the broader pipeline (model fetch, Replicate conversion start/end, backend save start/end) including non-secret identifiers (selected model id, returned job id) and ensure token is never logged."
         }
       ]
     }

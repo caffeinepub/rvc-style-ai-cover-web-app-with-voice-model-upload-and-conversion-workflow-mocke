@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-05T19:56:55.571Z",
+  "generatedAt": "2026-02-05T20:52:02.296Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -12,73 +12,74 @@
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Scrap and rebuild the client-side voice conversion integration so it reliably produces (and saves) audio that uses the selected voice model’s voice (no silent fallback to returning the original audio).",
+        "summary": "Improve error handling for the Replicate API calls used during cover creation so that generic browser/network errors (e.g., fetch throwing a TypeError that surfaces as “Load failed”) are caught and converted into a clear, user-facing error message that includes the failing step (create prediction, poll prediction, download result) and the HTTP status/body when available.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useConversionJobs.ts",
           "frontend/src/services/voiceConversion.ts",
+          "frontend/src/hooks/useConversionJobs.ts",
           "frontend/src/components/AudioUploadAndSubmit.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useConversionJobs.ts",
           "frontend/src/services/voiceConversion.ts",
+          "frontend/src/hooks/useConversionJobs.ts",
           "frontend/src/components/AudioUploadAndSubmit.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Update the conversion pipeline to pass the selected voice model’s actual data URL into the Replicate conversion call by retrieving the selected model from the backend and using its ExternalBlob direct URL as the model input for conversion.",
+        "summary": "Add a preflight configuration check on the Create Cover flow to detect when `VITE_REPLICATE_API_TOKEN` is missing/empty at runtime and block submission with a clear on-page error explaining that AI cover creation requires a Replicate API token and how to configure it (referencing `VITE_REPLICATE_API_TOKEN`).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useConversionJobs.ts",
-          "frontend/src/services/voiceConversion.ts"
+          "frontend/src/services/voiceConversion.ts",
+          "frontend/src/components/AudioUploadAndSubmit.tsx",
+          "frontend/src/pages/CreateCoverPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useConversionJobs.ts",
-          "frontend/src/services/voiceConversion.ts"
+          "frontend/src/services/voiceConversion.ts",
+          "frontend/src/components/AudioUploadAndSubmit.tsx",
+          "frontend/src/pages/CreateCoverPage.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Rebuild frontend audio playback for completed jobs to be robust across browsers by creating a Blob/ObjectURL for preview (instead of relying solely on playing the ExternalBlob direct URL), and ensure playback state and cleanup are handled correctly.",
+        "summary": "Ensure the audio MIME type used when converting uploaded audio bytes to a data URL is derived from the uploaded file (with safe fallbacks) rather than always using `audio/mpeg`, to reduce conversion failures for non-MP3 uploads.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/JobStatusCard.tsx",
-          "frontend/src/utils/downloadExternalBlob.ts"
+          "frontend/src/components/AudioUploadAndSubmit.tsx",
+          "frontend/src/hooks/useConversionJobs.ts",
+          "frontend/src/services/voiceConversion.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/JobStatusCard.tsx",
-          "frontend/src/utils/downloadExternalBlob.ts"
+          "frontend/src/components/AudioUploadAndSubmit.tsx",
+          "frontend/src/hooks/useConversionJobs.ts",
+          "frontend/src/services/voiceConversion.ts"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "Replace the current Replicate request/response handling with a robust implementation that can handle common Replicate output shapes and avoids unsafe base64 conversions that can corrupt large audio files.",
+        "summary": "Add lightweight diagnostic logging (console-level) around the cover creation pipeline to help identify where failures occur (model URL fetch, Replicate create, Replicate poll, result download, backend save), without exposing the Replicate API token in logs.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/services/voiceConversion.ts",
-          "frontend/src/hooks/useConversionJobs.ts",
-          "frontend/src/components/AudioUploadAndSubmit.tsx"
+          "frontend/src/hooks/useConversionJobs.ts"
         ],
         "matchedFiles": [
           "frontend/src/services/voiceConversion.ts",
-          "frontend/src/hooks/useConversionJobs.ts",
-          "frontend/src/components/AudioUploadAndSubmit.tsx"
+          "frontend/src/hooks/useConversionJobs.ts"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/components/AudioUploadAndSubmit.tsx",
-    "frontend/src/components/JobStatusCard.tsx",
+    "frontend/src/components/InlineAlert.tsx",
     "frontend/src/hooks/useConversionJobs.ts",
+    "frontend/src/pages/CreateCoverPage.tsx",
     "frontend/src/services/voiceConversion.ts",
-    "frontend/src/utils/downloadExternalBlob.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

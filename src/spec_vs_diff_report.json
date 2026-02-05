@@ -1,29 +1,27 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-05T19:56:55.568Z",
-  "summary": "Most frontend changes align with rebuilding the Replicate-based conversion flow, resolving the selected model’s direct URL from the backend, improving Replicate output handling, and implementing robust preview playback via Blob/ObjectURL with cleanup and user-facing playback errors. However, from the provided (truncated) backend diff, it is not clearly evidenced that the backend stores the converted audio as the completed job blob as required.",
+  "generatedAt": "2026-02-05T20:52:02.292Z",
+  "summary": "REQ-2, REQ-3, and REQ-4 appear implemented via a Replicate token preflight check, passing through uploaded file MIME type (with fallback), and adding console diagnostics around the pipeline. REQ-1 is only partially addressed: there is an attempt to normalize fetch errors with step context and HTTP status, but the diff does not show inclusion of HTTP response body/text in user-facing errors as required, and the POST/poll/download step-specific handling is not fully verifiable due to truncation.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "The created job in the backend must store the converted audio bytes as the completed job blob (i.e., preview/download uses the converted audio).",
-      "reason": "The frontend now uploads the converted audio bytes to the backend, but the shown backend implementation of makeVoiceConversionJob sets the job status to #processing and stores the uploaded audio under inputVoiceAudio; the diff excerpt does not show the logic that sets status to #completed with blob = (converted audio). Because the backend code is truncated right where completion is implied, there is insufficient evidence that the completed job blob is actually set to the converted audio.",
+      "id": "REQ-1",
+      "requirement": "When Replicate API calls fail during cover creation (create prediction, poll prediction, download result), convert generic fetch/network errors into clear user-facing messages that include the failing step and the HTTP status and response text/body when available.",
+      "reason": "The added error normalization includes step context and HTTP status, but does not include response body/text when available (it only formats `Failed ${step} (HTTP ${response.status})`). Also, due to truncation, it is not possible to confirm that POST create, GET poll, and final output download each surface step-specific UI errors with status/body as required.",
       "evidence": [
-        "backend/main.mo",
-        "frontend/src/hooks/useConversionJobs.ts"
+        "frontend/src/services/voiceConversion.ts (normalizeFetchError only includes HTTP status, not response body/text; file truncated before full create/poll/download logic)"
       ]
     }
   ],
   "hallucinated_features": [],
-  "confidence": 0.63,
+  "confidence": 0.64,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
     "frontend/src/components/AudioUploadAndSubmit.tsx",
-    "frontend/src/components/JobStatusCard.tsx",
+    "frontend/src/components/InlineAlert.tsx",
     "frontend/src/hooks/useConversionJobs.ts",
+    "frontend/src/pages/CreateCoverPage.tsx",
     "frontend/src/services/voiceConversion.ts",
-    "frontend/src/utils/downloadExternalBlob.ts",
     "project_state.json"
   ]
 }

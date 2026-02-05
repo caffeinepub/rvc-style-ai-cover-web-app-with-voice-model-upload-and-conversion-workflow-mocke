@@ -4,10 +4,13 @@ import { useEffect } from 'react';
 import AudioUploadAndSubmit from '../components/AudioUploadAndSubmit';
 import AppLayout from '../components/AppLayout';
 import AuthGate from '../components/AuthGate';
+import InlineAlert from '../components/InlineAlert';
+import { isReplicateConfigured } from '../services/voiceConversion';
 
 export default function CreateCoverPage() {
   const { data: models, isLoading } = useGetVoiceModels();
   const navigate = useNavigate();
+  const replicateConfigured = isReplicateConfigured();
 
   const hasModels = models && models.length > 0;
 
@@ -46,6 +49,15 @@ export default function CreateCoverPage() {
               Upload an audio file and select a voice model to create your AI cover
             </p>
           </div>
+
+          {!replicateConfigured && (
+            <InlineAlert
+              variant="info"
+              message="To enable AI cover creation, add your Replicate API token to the .env file as VITE_REPLICATE_API_TOKEN. You can get a token from replicate.com."
+              className="mb-6"
+            />
+          )}
+
           <AudioUploadAndSubmit />
         </div>
       </AuthGate>

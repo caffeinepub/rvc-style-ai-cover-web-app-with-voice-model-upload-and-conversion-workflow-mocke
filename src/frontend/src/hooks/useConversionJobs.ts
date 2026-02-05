@@ -43,6 +43,7 @@ export function useGetConversionJob(jobId: string | null) {
 interface CreateConversionJobParams {
   modelId: string;
   audioFile: Uint8Array;
+  audioMimeType?: string;
   onProgress?: (percentage: number) => void;
   onStatus?: (status: string) => void;
 }
@@ -52,8 +53,10 @@ export function useCreateConversionJob() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ modelId, audioFile, onProgress, onStatus }: CreateConversionJobParams) => {
+    mutationFn: async ({ modelId, audioFile, audioMimeType, onProgress, onStatus }: CreateConversionJobParams) => {
       if (!actor) throw new Error('Actor not available');
+
+      console.log('[Conversion Job] Starting job creation for model:', modelId);
 
       // Step 1: Fetch the selected model to get its audio URL
       if (onProgress) onProgress(5);
@@ -70,6 +73,8 @@ export function useCreateConversionJob() {
         throw new Error('Voice model has no valid audio URL');
       }
 
+      console.log('[Conversion Job] Model fetched, audio URL:', modelAudioURL);
+
       // Step 2: Perform actual AI voice conversion using Replicate API
       if (onProgress) onProgress(10);
       if (onStatus) onStatus('Starting AI conversion...');
@@ -77,6 +82,7 @@ export function useCreateConversionJob() {
       const convertedAudio = await convertVoiceWithReplicate(
         audioFile,
         modelAudioURL,
+        audioMimeType,
         (replicateStatus) => {
           // Map Replicate status to progress and user-facing messages
           if (replicateStatus === 'starting') {
@@ -95,6 +101,8 @@ export function useCreateConversionJob() {
         }
       );
 
+      console.log('[Conversion Job] Replicate conversion complete, saving to backend...');
+
       if (onProgress) onProgress(90);
       if (onStatus) onStatus('Saving to backend...');
 
@@ -109,6 +117,8 @@ export function useCreateConversionJob() {
       // Step 4: Save the job to backend with converted audio
       try {
         const jobId = await actor.makeVoiceConversionJob('', modelId, audioBlob);
+        
+        console.log('[Conversion Job] Job created successfully:', jobId);
         
         if (onProgress) onProgress(100);
         if (onStatus) onStatus('Complete!');
