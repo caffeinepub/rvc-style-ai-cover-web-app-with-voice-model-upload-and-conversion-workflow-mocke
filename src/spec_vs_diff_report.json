@@ -1,61 +1,44 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-05T16:59:01.842Z",
-  "summary": "BuildRequest contains no requirements or acceptance criteria. The diff introduces multiple backend and frontend changes (migration logic, user profiles, and extensive UI/hooks adjustments), which are therefore unrequested relative to the provided BuildRequest.",
-  "missing_requirements": [],
-  "hallucinated_features": [
+  "generatedAt": "2026-02-05T18:54:33.831Z",
+  "summary": "Frontend error surfacing for backend conversion failures was added (cleanly extracting canister trap/reject reasons and keeping the Create Cover form usable). Backend changes clearly add targetVoiceId validation and create jobs initially in a processing state, but the diff snippet does not show (a) the delayed transition to completed with a non-empty output blob or (b) that the completed output blob is derived from the selected VoiceModel audio rather than echoing the input audio.",
+  "missing_requirements": [
     {
-      "description": "Introduced a backend migration module that drops/removes prior voice model and conversion job data by returning an empty new actor state.",
-      "reason": "No requirements were specified in the BuildRequest, so adding migration behavior is unrequested.",
+      "id": "REQ-1",
+      "requirement": "Update backend conversion-job creation so the completed job output audio is derived from the selected target voice model (e.g., stored VoiceModel audio blob) rather than returning the uploaded input audio unchanged.",
+      "reason": "The shown portion of makeVoiceConversionJob validates targetVoiceId and stores a job in #processing, but no visible logic sets the completed output blob from the selected VoiceModel (e.g., model.audio) or otherwise ensures the output differs from the input. The relevant completion/output assignment code is not present in the provided truncated diff snippet.",
       "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo"
+        "backend/main.mo (truncated: makeVoiceConversionJob shows validation + status=#processing, but no output-blob derivation shown)"
       ]
     },
     {
-      "description": "Added/modified backend to include access control + storage mixins and implemented user profile storage and APIs (getCallerUserProfile, getUserProfile, saveCallerUserProfile) with authorization checks.",
-      "reason": "No requirements were specified in the BuildRequest, so adding user profile endpoints and auth-gated behavior is unrequested.",
+      "id": "REQ-2",
+      "requirement": "Change backend job lifecycle so jobs do not complete instantly: store as processing first, then after a short asynchronous delay transition to completed with a non-empty output blob.",
+      "reason": "The diff shows jobs being created with status=#processing, but it does not show any Timer/async logic that later updates the job status to #completed, nor does it show that a non-empty output blob is populated after a delay. Timer is imported, but the actual delayed transition code is not visible in the provided snippet.",
       "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "description": "Frontend UI work for voice models and conversion jobs flows (upload forms, selection, jobs table/cards) including progress UI and error/success alerts.",
-      "reason": "No requirements were specified in the BuildRequest, so implementing/adjusting these UI components is unrequested.",
-      "evidence": [
-        "frontend/src/components/AudioUploadAndSubmit.tsx",
-        "frontend/src/components/ModelSelect.tsx",
-        "frontend/src/components/VoiceModelUploadForm.tsx",
-        "frontend/src/components/VoiceModelsList.tsx",
-        "frontend/src/components/JobsTable.tsx",
-        "frontend/src/components/JobStatusCard.tsx"
-      ]
-    },
-    {
-      "description": "Stubbed React Query hooks for voice models and conversion jobs to return empty data / throw 'unavailable' errors until backend is restored.",
-      "reason": "No requirements were specified in the BuildRequest, so altering data hooks to stub behavior is unrequested.",
-      "evidence": [
-        "frontend/src/hooks/useVoiceModels.ts",
-        "frontend/src/hooks/useConversionJobs.ts",
-        "frontend/src/hooks/useModelNameLookup.ts"
+        "backend/main.mo (truncated: status initialized to #processing; no later transition code shown)"
       ]
     }
   ],
-  "confidence": 0.78,
+  "hallucinated_features": [
+    {
+      "description": "Added stable-state migration module and introduced a jobIdCounter field used for job ID generation.",
+      "reason": "The BuildRequest does not explicitly request adding a migration module or a persistent counter field; it focuses on output audio derivation, delayed completion, and frontend error display. These changes may be internal refactoring but are not directly requested requirements.",
+      "evidence": [
+        "backend/migration.mo (new file adding jobIdCounter to actor state)",
+        "backend/main.mo (adds var jobIdCounter = 0; uses it to form jobId)"
+      ]
+    }
+  ],
+  "confidence": 0.64,
   "changed_files": [
     "backend/main.mo",
     "backend/migration.mo",
     "frontend-file-summaries.txt",
     "frontend/src/components/AudioUploadAndSubmit.tsx",
-    "frontend/src/components/JobStatusCard.tsx",
-    "frontend/src/components/JobsTable.tsx",
-    "frontend/src/components/ModelSelect.tsx",
-    "frontend/src/components/VoiceModelUploadForm.tsx",
-    "frontend/src/components/VoiceModelsList.tsx",
     "frontend/src/hooks/useConversionJobs.ts",
-    "frontend/src/hooks/useModelNameLookup.ts",
-    "frontend/src/hooks/useVoiceModels.ts",
+    "frontend/src/utils/actorErrorMessage.ts",
     "project_state.json"
   ]
 }

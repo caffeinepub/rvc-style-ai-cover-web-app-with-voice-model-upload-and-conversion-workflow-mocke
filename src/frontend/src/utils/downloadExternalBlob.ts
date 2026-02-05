@@ -17,7 +17,6 @@ export async function downloadExternalBlob(blob: ExternalBlob, filename: string)
     setTimeout(() => URL.revokeObjectURL(url), 100);
   } catch (error) {
     console.error('Failed to download blob:', error);
-    throw new Error('Failed to download file');
+    throw new Error('Failed to download file. Please try again.');
   }
 }
-

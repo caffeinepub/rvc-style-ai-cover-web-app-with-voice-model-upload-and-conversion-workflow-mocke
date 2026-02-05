@@ -1,10 +1,73 @@
 {
   "kind": "build_request",
-  "title": "Untitled request",
+  "title": "Fix cover-generation so selected voice models produce audible vocals and jobs do not instantly complete",
   "priority": "normal",
-  "requirements": [],
-  "constraints": [],
-  "nonGoals": [],
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Update the backend conversion-job creation so the generated output audio is derived from the selected target voice model (so the resulting file contains audible singing/speaking from that model) instead of returning the original uploaded input audio unchanged.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-6"
+        ],
+        "quotes": [
+          "It appears that the results don’t actually have the models actually singing and or speaking in the songs.",
+          "I would like an output with the models singing in the songs."
+        ]
+      },
+      "acceptanceCriteria": [
+        "When makeVoiceConversionJob is called with a valid targetVoiceId, the completed job’s output blob is not just the inputVoiceAudio echoed back unchanged.",
+        "For a job created with targetVoiceId referencing an existing VoiceModel, the output blob is populated using data associated with that VoiceModel (e.g., the stored model audio blob) so that downloads contain audible vocal content from the selected model.",
+        "If targetVoiceId does not exist, the call still traps with an \"Invalid voice ID\"-type error (no silent success)."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Change backend job lifecycle behavior so newly created conversion jobs do not complete instantly: create jobs in a processing state first, then transition them to completed after a short asynchronous delay, so the frontend polling/processing UI reflects real job progression.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "And the jobs are instantly done with, you guessed it, no signs of the model actually singing and or speaking in it."
+        ]
+      },
+      "acceptanceCriteria": [
+        "makeVoiceConversionJob initially stores the new job with status=processing (not completed).",
+        "After a short delay, the job transitions to status=completed with a non-empty output blob.",
+        "Frontend polling (already based on job.status.__kind__ === 'processing') continues until the job becomes completed, then stops polling once there are no processing jobs."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Ensure the frontend correctly surfaces backend conversion failures related to missing/invalid model IDs by preserving and displaying backend error messages in the Create Cover flow.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5",
+          "msg-6"
+        ],
+        "quotes": [
+          "It appears that the results don’t actually have the models actually singing and or speaking in the songs.",
+          "Yeah, fix it please."
+        ]
+      },
+      "acceptanceCriteria": [
+        "If job creation fails due to invalid/empty target voice model ID, the UI shows an actionable English error message (e.g., includes the backend-provided reason such as invalid voice ID/unauthorized).",
+        "The Create Cover form remains usable after an error (no stuck loading state; user can reselect model and retry)."
+      ]
+    }
+  ],
+  "constraints": [
+    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
+    "Do not edit files under frontend/src/components/ui or any paths listed as immutable in SYSTEM_CONTEXT."
+  ],
+  "nonGoals": [
+    "Implementing real AI voice conversion / RVC inference or any external audio-generation service integration.",
+    "Adding third-party auth providers (only Internet Identity is in scope)."
+  ],
   "imageRequirements": {
     "required": [],
     "edits": []

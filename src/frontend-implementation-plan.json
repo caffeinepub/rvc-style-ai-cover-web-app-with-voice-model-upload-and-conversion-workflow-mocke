@@ -1,6 +1,32 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Untitled request",
-  "requirements": []
+  "title": "Surface backend conversion-job creation errors in Create Cover flow",
+  "requirements": [
+    {
+      "id": "REQ-3",
+      "summary": "Preserve and display backend error messages (e.g., invalid voice ID) during Create Cover job creation, and ensure the form can be retried after failures.",
+      "acceptanceCriteria": [
+        "If job creation fails due to invalid/empty target voice model ID, the UI shows an actionable English error message (e.g., includes the backend-provided reason such as invalid voice ID/unauthorized).",
+        "The Create Cover form remains usable after an error (no stuck loading state; user can reselect model and retry)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/actorErrorMessage.ts",
+          "operation": "create",
+          "description": "Add a small utility to extract a user-readable error message from backend/agent errors (prefer preserving backend-provided reason text, while stripping noisy prefixes when present)."
+        },
+        {
+          "path": "frontend/src/hooks/useConversionJobs.ts",
+          "operation": "modify",
+          "description": "Use the new error-message extraction utility to normalize errors from makeVoiceConversionJob so react-query toasts and thrown errors preserve backend-provided failure reasons (e.g., \"Invalid voice ID\"/\"Unauthorized\") instead of generic messages."
+        },
+        {
+          "path": "frontend/src/components/AudioUploadAndSubmit.tsx",
+          "operation": "modify",
+          "description": "Update Create Cover submission error handling to display the extracted backend reason via InlineAlert, ensure mutation/loading state is resettable (e.g., clear upload progress and mutation error on retry), and keep the form interactive after a failed submission so the user can reselect a model and try again."
+        }
+      ]
+    }
+  ]
 }

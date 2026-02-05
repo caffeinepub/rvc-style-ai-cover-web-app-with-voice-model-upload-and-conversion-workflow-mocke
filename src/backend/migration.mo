@@ -1,71 +1,27 @@
 import Map "mo:core/Map";
-import Set "mo:core/Set";
-import Storage "blob-storage/Storage";
+import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
+import Storage "blob-storage/Storage";
 
 module {
-  // Old types just for migration
-  type VoiceModelId = Nat;
-  type ConversionJobId = Nat;
-  type VoiceProfileId = Nat;
+  type IdCounter = Nat;
 
-  type ModelMetadata = {
-    name : Text;
-    description : Text;
-    format : Text;
-    trainingData : [Text];
-    createdAt : Int;
-  };
-
-  type VoiceModel = {
-    id : VoiceModelId;
-    owner : Principal;
-    metadata : ModelMetadata;
-    storage : Storage.ExternalBlob;
-    createdAt : Int;
-  };
-
-  type ConversionJobStatus = {
-    #pending;
-    #processing;
-    #failed;
-    #complete;
-  };
-
-  type ConversionJob = {
-    id : ConversionJobId;
-    owner : Principal;
-    modelId : VoiceModelId;
-    inputAudio : Storage.ExternalBlob;
-    resultAudio : ?Storage.ExternalBlob;
-    status : ConversionJobStatus;
-    createdAt : Int;
-    updatedAt : Int;
-  };
-
-  type VoiceProfile = {
-    id : VoiceProfileId;
-    owner : Principal;
-    name : Text;
-    modelId : ?VoiceModelId;
-    createdAt : Int;
-  };
-
+  // Actor type without the counter.
   type OldActor = {
-    voiceModels : Map.Map<VoiceModelId, VoiceModel>;
-    conversionJobs : Map.Map<ConversionJobId, ConversionJob>;
-    voiceProfiles : Map.Map<VoiceProfileId, VoiceProfile>;
-    userVoiceModels : Map.Map<Principal, Set.Set<VoiceModelId>>;
-    userConversionJobs : Map.Map<Principal, Set.Set<ConversionJobId>>;
-    nextVoiceModelId : VoiceModelId;
-    nextConversionJobId : ConversionJobId;
-    nextVoiceProfileId : VoiceProfileId;
+    userProfiles : Map.Map<Principal, { name : Text }>;
+    voiceModels : Map.Map<Text, { creator : Principal; name : Text; description : Text; audio : Storage.ExternalBlob; snapshotTime : Int }>;
+    conversionJobs : Map.Map<Text, { creator : Principal; sourceVoiceId : Text; targetVoiceId : Text; inputVoiceAudio : Storage.ExternalBlob; status : { #processing : { uploadTime : Int }; #completed : { blob : Storage.ExternalBlob; uploadTime : Int; processingTime : Int } } }>;
   };
 
-  type NewActor = {};
+  // Actor with new counter field.
+  type NewActor = {
+    userProfiles : Map.Map<Principal, { name : Text }>;
+    voiceModels : Map.Map<Text, { creator : Principal; name : Text; description : Text; audio : Storage.ExternalBlob; snapshotTime : Int }>;
+    conversionJobs : Map.Map<Text, { creator : Principal; sourceVoiceId : Text; targetVoiceId : Text; inputVoiceAudio : Storage.ExternalBlob; status : { #processing : { uploadTime : Int }; #completed : { blob : Storage.ExternalBlob; uploadTime : Int; processingTime : Int } } }>;
+    jobIdCounter : IdCounter;
+  };
 
-  public func run(_old : OldActor) : NewActor {
-    // Remove all conversion job and voice model data
-    {};
+  public func run(old : OldActor) : NewActor {
+    { old with jobIdCounter = 0 };
   };
 };

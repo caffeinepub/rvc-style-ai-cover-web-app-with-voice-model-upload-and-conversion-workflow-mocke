@@ -1,4 +1,27 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-ensure-the-frontend-correctly-surfaces-backend-conversion-failures-related-to-missing-invalid-model-ids-by-preserving-and-displaying-backend-error-messages-in-the-create-cover-flow",
+      "featureTitle": "Ensure the frontend correctly surfaces backend conversion failures related to missing/invalid model IDs by preserving and displaying backend error messages in the Create Cover flow.",
+      "files": [
+        "frontend/src/components/AudioUploadAndSubmit.tsx",
+        "frontend/src/hooks/useConversionJobs.ts",
+        "frontend/src/utils/actorErrorMessage.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

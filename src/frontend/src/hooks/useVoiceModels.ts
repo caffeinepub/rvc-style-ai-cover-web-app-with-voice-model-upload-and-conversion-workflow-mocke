@@ -2,32 +2,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
 import { toast } from 'sonner';
-
-// Temporary stub types until backend is restored
-type VoiceModelId = bigint;
-type VoiceModel = {
-  id: VoiceModelId;
-  owner: string;
-  metadata: ModelMetadata;
-  createdAt: bigint;
-};
-type ModelMetadata = {
-  name: string;
-  description: string;
-  format: string;
-  trainingData: string[];
-  createdAt: bigint;
-};
+import { VoiceModelWithId, ExternalBlob } from '../backend';
 
 export function useGetVoiceModels() {
   const { actor, isFetching: actorFetching } = useActor();
   const { identity } = useInternetIdentity();
 
-  return useQuery<VoiceModel[]>({
+  return useQuery<VoiceModelWithId[]>({
     queryKey: ['voiceModels'],
     queryFn: async () => {
-      // Backend functionality removed - return empty array
-      return [];
+      if (!actor) return [];
+      return actor.getOwnVoiceModelsWithIds();
     },
     enabled: !!actor && !!identity && !actorFetching,
   });
@@ -49,8 +34,15 @@ export function useUploadVoiceModel() {
     mutationFn: async ({ name, description, format, file, onProgress }: UploadVoiceModelParams) => {
       if (!actor) throw new Error('Actor not available');
       
-      // Backend functionality removed
-      throw new Error('Voice model upload is currently unavailable. Backend functionality needs to be restored.');
+      // Create ExternalBlob with upload progress tracking
+      // Cast to Uint8Array<ArrayBuffer> to satisfy type requirements
+      const fileBuffer = new Uint8Array(file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength)) as Uint8Array<ArrayBuffer>;
+      let voiceBlob = ExternalBlob.fromBytes(fileBuffer);
+      if (onProgress) {
+        voiceBlob = voiceBlob.withUploadProgress(onProgress);
+      }
+      
+      return actor.uploadNewVoiceModel(name, description, voiceBlob);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['voiceModels'] });
@@ -67,11 +59,9 @@ export function useDeleteVoiceModel() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (modelId: VoiceModelId) => {
+    mutationFn: async (modelId: string) => {
       if (!actor) throw new Error('Actor not available');
-      
-      // Backend functionality removed
-      throw new Error('Voice model deletion is currently unavailable. Backend functionality needs to be restored.');
+      return actor.deleteVoiceModel(modelId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['voiceModels'] });

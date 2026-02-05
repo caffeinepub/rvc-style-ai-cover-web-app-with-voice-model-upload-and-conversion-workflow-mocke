@@ -24,7 +24,35 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const ExternalBlob = IDL.Vec(IDL.Nat8);
+export const Time = IDL.Int;
+export const JobStatus = IDL.Variant({
+  'completed' : IDL.Record({
+    'blob' : ExternalBlob,
+    'processingTime' : Time,
+    'uploadTime' : Time,
+  }),
+  'processing' : IDL.Record({ 'uploadTime' : Time }),
+});
+export const ConversionJob = IDL.Record({
+  'status' : JobStatus,
+  'creator' : IDL.Principal,
+  'inputVoiceAudio' : ExternalBlob,
+  'targetVoiceId' : IDL.Text,
+  'sourceVoiceId' : IDL.Text,
+});
+export const VoiceModel = IDL.Record({
+  'snapshotTime' : Time,
+  'creator' : IDL.Principal,
+  'audio' : ExternalBlob,
+  'name' : IDL.Text,
+  'description' : IDL.Text,
+});
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const VoiceModelWithId = IDL.Record({
+  'id' : IDL.Text,
+  'model' : VoiceModel,
+});
 
 export const idlService = IDL.Service({
   '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -55,15 +83,35 @@ export const idlService = IDL.Service({
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'deleteVoiceModel' : IDL.Func([IDL.Text], [IDL.Text], []),
+  'getAllConversionJobs' : IDL.Func([], [IDL.Vec(ConversionJob)], ['query']),
+  'getAllVoiceModels' : IDL.Func([], [IDL.Vec(VoiceModel)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getJob' : IDL.Func([IDL.Text], [IDL.Opt(ConversionJob)], ['query']),
+  'getOwnVoiceModelsWithIds' : IDL.Func(
+      [],
+      [IDL.Vec(VoiceModelWithId)],
+      ['query'],
+    ),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
+  'getVoiceModel' : IDL.Func([IDL.Text], [IDL.Opt(VoiceModel)], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'makeVoiceConversionJob' : IDL.Func(
+      [IDL.Text, IDL.Text, ExternalBlob],
+      [IDL.Text],
+      [],
+    ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'uploadNewVoiceModel' : IDL.Func(
+      [IDL.Text, IDL.Text, ExternalBlob],
+      [IDL.Text],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -85,7 +133,35 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
+  const ExternalBlob = IDL.Vec(IDL.Nat8);
+  const Time = IDL.Int;
+  const JobStatus = IDL.Variant({
+    'completed' : IDL.Record({
+      'blob' : ExternalBlob,
+      'processingTime' : Time,
+      'uploadTime' : Time,
+    }),
+    'processing' : IDL.Record({ 'uploadTime' : Time }),
+  });
+  const ConversionJob = IDL.Record({
+    'status' : JobStatus,
+    'creator' : IDL.Principal,
+    'inputVoiceAudio' : ExternalBlob,
+    'targetVoiceId' : IDL.Text,
+    'sourceVoiceId' : IDL.Text,
+  });
+  const VoiceModel = IDL.Record({
+    'snapshotTime' : Time,
+    'creator' : IDL.Principal,
+    'audio' : ExternalBlob,
+    'name' : IDL.Text,
+    'description' : IDL.Text,
+  });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const VoiceModelWithId = IDL.Record({
+    'id' : IDL.Text,
+    'model' : VoiceModel,
+  });
   
   return IDL.Service({
     '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -116,15 +192,35 @@ export const idlFactory = ({ IDL }) => {
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'deleteVoiceModel' : IDL.Func([IDL.Text], [IDL.Text], []),
+    'getAllConversionJobs' : IDL.Func([], [IDL.Vec(ConversionJob)], ['query']),
+    'getAllVoiceModels' : IDL.Func([], [IDL.Vec(VoiceModel)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getJob' : IDL.Func([IDL.Text], [IDL.Opt(ConversionJob)], ['query']),
+    'getOwnVoiceModelsWithIds' : IDL.Func(
+        [],
+        [IDL.Vec(VoiceModelWithId)],
+        ['query'],
+      ),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
+    'getVoiceModel' : IDL.Func([IDL.Text], [IDL.Opt(VoiceModel)], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'makeVoiceConversionJob' : IDL.Func(
+        [IDL.Text, IDL.Text, ExternalBlob],
+        [IDL.Text],
+        [],
+      ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'uploadNewVoiceModel' : IDL.Func(
+        [IDL.Text, IDL.Text, ExternalBlob],
+        [IDL.Text],
+        [],
+      ),
   });
 };
 

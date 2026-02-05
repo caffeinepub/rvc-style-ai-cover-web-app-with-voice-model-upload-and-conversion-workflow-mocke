@@ -10,10 +10,35 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface ConversionJob {
+  'status' : JobStatus,
+  'creator' : Principal,
+  'inputVoiceAudio' : ExternalBlob,
+  'targetVoiceId' : string,
+  'sourceVoiceId' : string,
+}
+export type ExternalBlob = Uint8Array;
+export type JobStatus = {
+    'completed' : {
+      'blob' : ExternalBlob,
+      'processingTime' : Time,
+      'uploadTime' : Time,
+    }
+  } |
+  { 'processing' : { 'uploadTime' : Time } };
+export type Time = bigint;
 export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
+export interface VoiceModel {
+  'snapshotTime' : Time,
+  'creator' : Principal,
+  'audio' : ExternalBlob,
+  'name' : string,
+  'description' : string,
+}
+export interface VoiceModelWithId { 'id' : string, 'model' : VoiceModel }
 export interface _CaffeineStorageCreateCertificateResult {
   'method' : string,
   'blob_hash' : string,
@@ -43,11 +68,22 @@ export interface _SERVICE {
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'deleteVoiceModel' : ActorMethod<[string], string>,
+  'getAllConversionJobs' : ActorMethod<[], Array<ConversionJob>>,
+  'getAllVoiceModels' : ActorMethod<[], Array<VoiceModel>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getJob' : ActorMethod<[string], [] | [ConversionJob]>,
+  'getOwnVoiceModelsWithIds' : ActorMethod<[], Array<VoiceModelWithId>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'getVoiceModel' : ActorMethod<[string], [] | [VoiceModel]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'makeVoiceConversionJob' : ActorMethod<
+    [string, string, ExternalBlob],
+    string
+  >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'uploadNewVoiceModel' : ActorMethod<[string, string, ExternalBlob], string>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

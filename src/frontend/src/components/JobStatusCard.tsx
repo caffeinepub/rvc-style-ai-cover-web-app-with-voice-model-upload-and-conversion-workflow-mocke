@@ -3,76 +3,77 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Download, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { downloadExternalBlob } from '../utils/downloadExternalBlob';
-
-// Temporary stub types until backend is restored
-type ConversionJobId = bigint;
-type VoiceModelId = bigint;
-type ConversionJobStatus = 'pending' | 'processing' | 'failed' | 'complete';
-type ConversionJob = {
-  id: ConversionJobId;
-  owner: string;
-  modelId: VoiceModelId;
-  status: ConversionJobStatus;
-  createdAt: bigint;
-  updatedAt: bigint;
-};
+import { ConversionJob } from '../backend';
+import { useState } from 'react';
 
 interface JobStatusCardProps {
   job: ConversionJob;
+  jobId: string;
   modelName?: string;
 }
 
-const statusConfig = {
-  pending: {
-    label: 'Pending',
-    icon: Clock,
-    variant: 'secondary' as const,
-    animate: true,
-  },
-  processing: {
-    label: 'Processing',
-    icon: Loader2,
-    variant: 'default' as const,
-    animate: true,
-  },
-  complete: {
-    label: 'Complete',
-    icon: CheckCircle2,
-    variant: 'default' as const,
-    animate: false,
-  },
-  failed: {
-    label: 'Failed',
-    icon: XCircle,
-    variant: 'destructive' as const,
-    animate: false,
-  },
-};
+export default function JobStatusCard({ job, jobId, modelName }: JobStatusCardProps) {
+  const [isDownloading, setIsDownloading] = useState(false);
+  
+  const isProcessing = job.status.__kind__ === 'processing';
+  const isComplete = job.status.__kind__ === 'completed';
 
-export default function JobStatusCard({ job, modelName }: JobStatusCardProps) {
-  const config = statusConfig[job.status];
-  const StatusIcon = config.icon;
+  const statusConfig = isProcessing
+    ? {
+        label: 'Processing',
+        icon: Loader2,
+        variant: 'default' as const,
+        animate: true,
+      }
+    : {
+        label: 'Complete',
+        icon: CheckCircle2,
+        variant: 'default' as const,
+        animate: false,
+      };
+
+  const StatusIcon = statusConfig.icon;
 
   const handleDownload = async () => {
-    // Backend functionality removed - no result audio available
-    console.log('Download not available - backend functionality removed');
+    if (!isComplete || job.status.__kind__ !== 'completed') {
+      return;
+    }
+
+    try {
+      setIsDownloading(true);
+      const resultBlob = job.status.completed.blob;
+      await downloadExternalBlob(resultBlob, `converted-audio-${jobId}.mp3`);
+    } catch (error) {
+      console.error('Download failed:', error);
+    } finally {
+      setIsDownloading(false);
+    }
   };
+
+  // Use type narrowing to safely access the correct status fields
+  const createdAt = job.status.__kind__ === 'processing'
+    ? job.status.processing.uploadTime
+    : job.status.completed.uploadTime;
+
+  const updatedAt = job.status.__kind__ === 'completed'
+    ? job.status.completed.processingTime
+    : createdAt;
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-lg">Job #{job.id.toString()}</CardTitle>
+            <CardTitle className="text-lg">Job #{jobId.slice(0, 8)}...</CardTitle>
             <CardDescription className="mt-1">
               Model: {modelName || 'Unknown Model'}
             </CardDescription>
           </div>
-          <Badge variant={config.variant}>
+          <Badge variant={statusConfig.variant}>
             <StatusIcon
-              className={`mr-1 h-3 w-3 ${config.animate ? 'animate-spin' : ''}`}
+              className={`mr-1 h-3 w-3 ${statusConfig.animate ? 'animate-spin' : ''}`}
             />
-            {config.label}
+            {statusConfig.label}
           </Badge>
         </div>
       </CardHeader>
@@ -81,18 +82,31 @@ export default function JobStatusCard({ job, modelName }: JobStatusCardProps) {
           <div className="text-sm text-muted-foreground">
             <div className="flex justify-between">
               <span>Created:</span>
-              <span>{new Date(Number(job.createdAt) / 1000000).toLocaleString()}</span>
+              <span>{new Date(Number(createdAt) / 1000000).toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
               <span>Updated:</span>
-              <span>{new Date(Number(job.updatedAt) / 1000000).toLocaleString()}</span>
+              <span>{new Date(Number(updatedAt) / 1000000).toLocaleString()}</span>
             </div>
           </div>
 
-          {job.status === 'complete' && (
-            <Button onClick={handleDownload} className="w-full" disabled>
-              <Download className="mr-2 h-4 w-4" />
-              Download Result (Unavailable)
+          {isComplete && (
+            <Button 
+              onClick={handleDownload} 
+              className="w-full" 
+              disabled={isDownloading}
+            >
+              {isDownloading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Downloading...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Result
+                </>
+              )}
             </Button>
           )}
         </div>

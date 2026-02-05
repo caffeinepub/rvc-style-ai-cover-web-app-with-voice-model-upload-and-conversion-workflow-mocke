@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { Music, Loader2 } from 'lucide-react';
 import InlineAlert from './InlineAlert';
 import { fileToBytes } from '../utils/fileToBytes';
+import { extractActorErrorMessage } from '../utils/actorErrorMessage';
 
 export default function AudioUploadAndSubmit() {
   const [selectedModelId, setSelectedModelId] = useState('');
@@ -23,12 +24,26 @@ export default function AudioUploadAndSubmit() {
     if (file) {
       setAudioFile(file);
       setError(null);
+      // Clear any previous mutation errors when user changes file
+      if (createJobMutation.isError) {
+        createJobMutation.reset();
+      }
+    }
+  };
+
+  const handleModelChange = (modelId: string) => {
+    setSelectedModelId(modelId);
+    setError(null);
+    // Clear any previous mutation errors when user changes model
+    if (createJobMutation.isError) {
+      createJobMutation.reset();
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setUploadProgress(0);
 
     if (!selectedModelId) {
       setError('Please select a voice model');
@@ -43,12 +58,12 @@ export default function AudioUploadAndSubmit() {
     try {
       const bytes = await fileToBytes(audioFile);
       await createJobMutation.mutateAsync({
-        modelId: BigInt(selectedModelId),
+        modelId: selectedModelId,
         audioFile: bytes,
         onProgress: setUploadProgress,
       });
 
-      // Reset form
+      // Reset form on success
       setSelectedModelId('');
       setAudioFile(null);
       setUploadProgress(0);
@@ -56,8 +71,12 @@ export default function AudioUploadAndSubmit() {
       // Reset file input
       const fileInput = document.getElementById('audio-file') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
-    } catch (err: any) {
-      setError(err.message || 'Failed to create conversion job');
+    } catch (err: unknown) {
+      // Extract clean error message from backend
+      const cleanMessage = extractActorErrorMessage(err);
+      setError(cleanMessage);
+      // Reset upload progress on error so user can retry
+      setUploadProgress(0);
     }
   };
 
@@ -75,7 +94,7 @@ export default function AudioUploadAndSubmit() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <ModelSelect
             value={selectedModelId}
-            onChange={setSelectedModelId}
+            onChange={handleModelChange}
             disabled={isProcessing}
           />
 

@@ -1,37 +1,56 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-05T16:59:01.844Z",
+  "generatedAt": "2026-02-05T18:54:33.834Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 0,
-    "implemented": 0,
-    "items": []
+    "total": 3,
+    "implemented": 1,
+    "items": [
+      {
+        "id": "REQ-1",
+        "summary": "Update the backend conversion-job creation so the generated output audio is derived from the selected target voice model (so the resulting file contains audible singing/speaking from that model) instead of returning the original uploaded input audio unchanged.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Change backend job lifecycle behavior so newly created conversion jobs do not complete instantly: create jobs in a processing state first, then transition them to completed after a short asynchronous delay, so the frontend polling/processing UI reflects real job progression.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Ensure the frontend correctly surfaces backend conversion failures related to missing/invalid model IDs by preserving and displaying backend error messages in the Create Cover flow.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/utils/actorErrorMessage.ts",
+          "frontend/src/hooks/useConversionJobs.ts",
+          "frontend/src/components/AudioUploadAndSubmit.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/utils/actorErrorMessage.ts",
+          "frontend/src/hooks/useConversionJobs.ts",
+          "frontend/src/components/AudioUploadAndSubmit.tsx"
+        ]
+      }
+    ]
   },
   "changedFiles": [
     "backend/main.mo",
     "backend/migration.mo",
     "build-request.json",
-    "build-template/README.md",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
     "frontend/src/components/AudioUploadAndSubmit.tsx",
-    "frontend/src/components/JobStatusCard.tsx",
-    "frontend/src/components/JobsTable.tsx",
-    "frontend/src/components/ModelSelect.tsx",
-    "frontend/src/components/VoiceModelUploadForm.tsx",
-    "frontend/src/components/VoiceModelsList.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
     "frontend/src/hooks/useConversionJobs.ts",
-    "frontend/src/hooks/useModelNameLookup.ts",
-    "frontend/src/hooks/useVoiceModels.ts",
+    "frontend/src/utils/actorErrorMessage.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

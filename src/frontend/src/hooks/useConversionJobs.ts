@@ -2,19 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
 import { toast } from 'sonner';
-
-// Temporary stub types until backend is restored
-type ConversionJobId = bigint;
-type VoiceModelId = bigint;
-type ConversionJobStatus = 'pending' | 'processing' | 'failed' | 'complete';
-type ConversionJob = {
-  id: ConversionJobId;
-  owner: string;
-  modelId: VoiceModelId;
-  status: ConversionJobStatus;
-  createdAt: bigint;
-  updatedAt: bigint;
-};
+import { ConversionJob, ExternalBlob } from '../backend';
+import { extractActorErrorMessage } from '../utils/actorErrorMessage';
 
 export function useGetConversionJobs() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -23,35 +12,35 @@ export function useGetConversionJobs() {
   return useQuery<ConversionJob[]>({
     queryKey: ['conversionJobs'],
     queryFn: async () => {
-      // Backend functionality removed - return empty array
-      return [];
+      if (!actor) return [];
+      return actor.getAllConversionJobs();
     },
     enabled: !!actor && !!identity && !actorFetching,
     refetchInterval: (query) => {
       const jobs = query.state.data || [];
       const hasActiveJobs = jobs.some(
-        (job) => job.status === 'pending' || job.status === 'processing'
+        (job) => job.status.__kind__ === 'processing'
       );
       return hasActiveJobs ? 5000 : false;
     },
   });
 }
 
-export function useGetConversionJob(jobId: ConversionJobId | null) {
+export function useGetConversionJob(jobId: string | null) {
   const { actor } = useActor();
 
   return useQuery<ConversionJob | null>({
-    queryKey: ['conversionJob', jobId?.toString()],
+    queryKey: ['conversionJob', jobId],
     queryFn: async () => {
-      // Backend functionality removed
-      return null;
+      if (!actor || !jobId) return null;
+      return actor.getJob(jobId);
     },
     enabled: !!actor && !!jobId,
   });
 }
 
 interface CreateConversionJobParams {
-  modelId: VoiceModelId;
+  modelId: string;
   audioFile: Uint8Array;
   onProgress?: (percentage: number) => void;
 }
@@ -64,15 +53,30 @@ export function useCreateConversionJob() {
     mutationFn: async ({ modelId, audioFile, onProgress }: CreateConversionJobParams) => {
       if (!actor) throw new Error('Actor not available');
 
-      // Backend functionality removed
-      throw new Error('Conversion job creation is currently unavailable. Backend functionality needs to be restored.');
+      // Create ExternalBlob with upload progress tracking
+      // Cast to Uint8Array<ArrayBuffer> to satisfy type requirements
+      const audioBuffer = new Uint8Array(audioFile.buffer.slice(audioFile.byteOffset, audioFile.byteOffset + audioFile.byteLength)) as Uint8Array<ArrayBuffer>;
+      let audioBlob = ExternalBlob.fromBytes(audioBuffer);
+      if (onProgress) {
+        audioBlob = audioBlob.withUploadProgress(onProgress);
+      }
+
+      try {
+        // Use empty string for sourceVoiceId as it's not used in the current implementation
+        return await actor.makeVoiceConversionJob('', modelId, audioBlob);
+      } catch (error) {
+        // Extract and re-throw with clean error message
+        const cleanMessage = extractActorErrorMessage(error);
+        throw new Error(cleanMessage);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conversionJobs'] });
       toast.success('Conversion job created successfully');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to create conversion job');
+    onError: (error: Error) => {
+      const message = extractActorErrorMessage(error);
+      toast.error(message);
     },
   });
 }

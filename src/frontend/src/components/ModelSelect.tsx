@@ -8,9 +8,6 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 
-// Temporary stub type until backend is restored
-type VoiceModelId = bigint;
-
 interface ModelSelectProps {
   value: string;
   onChange: (value: string) => void;
@@ -54,9 +51,9 @@ export default function ModelSelect({ value, onChange, disabled }: ModelSelectPr
           <SelectValue placeholder="Select a voice model" />
         </SelectTrigger>
         <SelectContent>
-          {models.map((model) => (
-            <SelectItem key={model.id.toString()} value={model.id.toString()}>
-              {model.metadata.name}
+          {models.map((modelWithId) => (
+            <SelectItem key={modelWithId.id} value={modelWithId.id}>
+              {modelWithId.model.name}
             </SelectItem>
           ))}
         </SelectContent>

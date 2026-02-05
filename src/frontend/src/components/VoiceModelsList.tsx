@@ -1,7 +1,6 @@
 import { useGetVoiceModels, useDeleteVoiceModel } from '../hooks/useVoiceModels';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +37,7 @@ export default function VoiceModelsList() {
     return null;
   }
 
-  const handleDelete = async (modelId: bigint) => {
+  const handleDelete = async (modelId: string) => {
     await deleteMutation.mutateAsync(modelId);
   };
 
@@ -46,14 +45,14 @@ export default function VoiceModelsList() {
     <div>
       <h2 className="text-2xl font-semibold mb-4">Your Models</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {models.map((model) => (
-          <Card key={model.id.toString()}>
+        {models.map((modelWithId) => (
+          <Card key={modelWithId.id}>
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-lg">{model.metadata.name}</CardTitle>
+                  <CardTitle className="text-lg">{modelWithId.model.name}</CardTitle>
                   <CardDescription className="mt-1">
-                    {model.metadata.description || 'No description'}
+                    {modelWithId.model.description || 'No description'}
                   </CardDescription>
                 </div>
                 <AlertDialog>
@@ -71,14 +70,14 @@ export default function VoiceModelsList() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Voice Model</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete "{model.metadata.name}"? This action cannot be
+                        Are you sure you want to delete "{modelWithId.model.name}"? This action cannot be
                         undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={() => handleDelete(model.id)}
+                        onClick={() => handleDelete(modelWithId.id)}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
                         Delete
@@ -90,13 +89,10 @@ export default function VoiceModelsList() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{model.metadata.format}</Badge>
-                </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-3 w-3" />
                   <span>
-                    {new Date(Number(model.createdAt) / 1000000).toLocaleDateString()}
+                    {new Date(Number(modelWithId.model.snapshotTime) / 1000000).toLocaleDateString()}
                   </span>
                 </div>
               </div>

@@ -22,8 +22,20 @@ export default function JobsTable() {
     return null;
   }
 
-  // Sort jobs by creation date (newest first)
-  const sortedJobs = [...jobs].sort((a, b) => {
+  // Generate unique keys for jobs and sort by creation date (newest first)
+  const jobsWithKeys = jobs.map((job, index) => {
+    const createdAt = job.status.__kind__ === 'processing'
+      ? job.status.processing.uploadTime
+      : job.status.completed.uploadTime;
+    
+    return {
+      job,
+      key: `${job.targetVoiceId}-${createdAt.toString()}-${index}`,
+      createdAt,
+    };
+  });
+
+  const sortedJobs = [...jobsWithKeys].sort((a, b) => {
     return Number(b.createdAt - a.createdAt);
   });
 
@@ -31,11 +43,12 @@ export default function JobsTable() {
     <div>
       <h2 className="text-2xl font-semibold mb-4">Your Jobs</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {sortedJobs.map((job) => (
+        {sortedJobs.map(({ job, key }) => (
           <JobStatusCard
-            key={job.id.toString()}
+            key={key}
             job={job}
-            modelName={getModelName(job.modelId)}
+            jobId={key}
+            modelName={getModelName(job.targetVoiceId)}
           />
         ))}
       </div>
