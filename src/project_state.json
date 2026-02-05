@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "Website for creating AI song covers using RVC-style voice conversion, including user-uploaded voice models and an audio conversion workflow.",
+  "architectural_notes": [],
+  "known_issues": [],
+  "isFixRequest": false,
+  "imageRequirements": "## Required Images\n- Minimalist monochrome wordmark logo reading \"RVC Covers\" (rvc-covers-logo.dim_512x256.png)\n- Stylized studio/microphone illustration with warm dark theme accents (studio-illustration.dim_1600x900.png)\n- Three simple line icons: upload, waveform, download (rvc-icons-set.dim_512x512.png)",
+  "existing_features": [
+    {
+      "id": "feature-create-core-app-structure-and-navigation-for-an-rvc-style-website-with-pages-for-a-voice-models-upload-manage-b-create-cover-upload-source-audio-pick-model-submit-and-c-jobs-history-view-past-conversions-and-download-results",
+      "title": "Create core app structure and navigation for an RVC-style website with pages for (a) Voice Models (upload/manage), (b) Create Cover (upload source audio + pick model + submit), and (c) Jobs/History (view past conversions and download results).",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-internet-identity-sign-in-and-use-the-authenticated-principal-to-scope-all-uploaded-voice-models-and-conversion-jobs-to-the-signed-in-user",
+      "title": "Add Internet Identity sign-in and use the authenticated principal to scope all uploaded voice models and conversion jobs to the signed-in user.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-voice-models-ui-upload-form-name-description-optional-tags-format-file-picker-models-list-and-delete-action-wired-to-backend-via-react-query",
+      "title": "Implement the Voice Models UI: upload form (name, description, optional tags/format, file picker), models list, and delete action, wired to backend via React Query.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-create-cover-ui-choose-an-uploaded-voice-model-upload-source-audio-submit-a-conversion-job-and-display-job-status-with-an-option-to-download-the-result-when-available",
+      "title": "Implement the Create Cover UI: choose an uploaded voice model, upload source audio, submit a conversion job, and display job status with an option to download the result when available.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-jobs-history-ui-to-list-past-conversion-jobs-for-the-signed-in-user-show-status-details-and-allow-downloading-completed-results",
+      "title": "Implement Jobs/History UI to list past conversion jobs for the signed-in user, show status/details, and allow downloading completed results.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-a-coherent-distinctive-visual-theme-across-the-app-colors-typography-spacing-and-component-styling-appropriate-for-a-music-creator-tool-avoiding-default-styling-and-avoiding-a-blue-purple-palette",
+      "title": "Apply a coherent, distinctive visual theme across the app (colors, typography, spacing, and component styling) appropriate for a music/creator tool, avoiding default styling and avoiding a blue/purple palette.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-generated-static-image-assets-for-branding-and-hero-empty-states-and-render-them-from-frontend-public-assets-generated-in-the-ui-e-g-header-logo-landing-empty-state-illustration",
+      "title": "Add generated static image assets for branding and hero/empty states, and render them from frontend/public/assets/generated in the UI (e.g., header logo, landing/empty-state illustration).",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Build an RVC web app to generate AI song covers via voice conversion",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Allow users to upload and manage their own voice models for conversion",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Provide an upload/submit audio workflow and return the generated converted audio cover",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Implement backend support to upload, store, list, and delete user voice models, including model metadata (name, description, format/tag) and the raw model file as chunked bytes to accommodate large files.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Implement backend support for a conversion workflow: create a conversion job that references a selected voice model and an uploaded source audio file (chunked upload), track job status, and provide a downloadable 'result audio' blob when complete.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Provide a mocked/placeholder conversion implementation in the backend so the end-to-end flow works without external AI inference: upon job submission, mark the job as processing then complete it by setting the result audio to a deterministic placeholder (e.g., identical to the uploaded source audio or a simple pass-through).",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "status": "pending"
+    }
+  ],
+  "projectName": "RVC-style AI cover web app with voice model upload and conversion workflow (mocked processing)",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

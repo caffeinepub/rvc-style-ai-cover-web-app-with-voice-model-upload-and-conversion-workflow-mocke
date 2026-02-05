@@ -1,0 +1,120 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-05T16:50:00.243Z",
+  "summary": "The diff adds a new Motoko backend actor plus a React/TanStack Router frontend with navigation, Internet Identity-based auth gating, voice model upload/list/delete UI, conversion job creation and jobs listing with polling and download. Several requested items are not evidenced (notably job detail view, explicit chunked-upload endpoints, and use of the other required generated images). There are also some added features not requested (authorization secret init/admin token flow, extra backend types, and template/branding footer content).",
+  "missing_requirements": [
+    {
+      "id": "REQ-3",
+      "requirement": "Backend exposes methods to: create/upload a model (chunked upload), list models for caller, get model metadata, and delete a model; chunked upload supports files larger than a single message payload (client sends multiple chunks, backend reassembles).",
+      "reason": "The backend shows an `uploadVoiceModel(metadata, file : Storage.ExternalBlob)` and `getVoiceModelsByOwner()` in the truncated snippet, but there is no clear evidence in the diff summary of dedicated chunked-upload session/chunk APIs (multiple calls) or a separate 'get model metadata' method. The frontend converts whole files into bytes (`fileToBytes`) and wraps them into `ExternalBlob.fromBytes`, which does not demonstrate multi-message chunked uploads by itself.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/components/VoiceModelUploadForm.tsx",
+        "frontend/src/utils/fileToBytes (referenced)",
+        "frontend/src/hooks/useVoiceModels.ts"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "requirement": "Backend exposes methods to: create job, upload audio (chunked), start/mark processing, get job status, list jobs for caller, and download result audio bytes; job records include required metadata and are scoped to caller.",
+      "reason": "Frontend calls `actor.createConversionJob(...)`, `actor.processConversionJob(jobId)`, `actor.getConversionJobsByOwner()`, and `actor.getConversionJob(jobId)`, but the backend portion containing conversion job methods is truncated, and there is no diff evidence of download APIs for result bytes nor explicit chunked upload endpoints for audio.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/hooks/useConversionJobs.ts",
+        "frontend/src/components/JobStatusCard.tsx",
+        "frontend/src/utils/downloadExternalBlob (referenced)"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "Create Cover UI displays job status and updates it (polling via React Query) until completion or failure; provides download when complete.",
+      "reason": "The Create Cover component shown (`AudioUploadAndSubmit`) submits a job and shows a success message directing users to the Jobs page, but there is no evidence in the shown Create Cover UI of displaying the submitted job's status on that page or polling for it there.",
+      "evidence": [
+        "frontend/src/components/AudioUploadAndSubmit.tsx",
+        "frontend/src/hooks/useConversionJobs.ts"
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "requirement": "Jobs/History UI allows opening/viewing a single job’s details in addition to listing jobs, and shows failed-job English error message.",
+      "reason": "The diff shows a jobs grid (`JobsTable` + `JobStatusCard`) but no evidence of a dedicated job details view/route (e.g., `/jobs/:id`) or a UI to open a single job’s details. The failed state message is generic and not clearly tied to a backend-provided error message.",
+      "evidence": [
+        "frontend/src/components/JobsTable.tsx",
+        "frontend/src/components/JobStatusCard.tsx",
+        "frontend/src/App.tsx"
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "requirement": "Add generated static image assets (logo, studio illustration, icons set) under frontend/public/assets/generated and use at least one for branding and one for a hero/empty state.",
+      "reason": "The logo is referenced in `BrandLogo`, but there is no evidence that the other required images (studio illustration and icons set) exist or are used. The diff summary omits binary/static asset files, and `EmptyStateHero` exists but no evidence shows it being used with the studio illustration.",
+      "evidence": [
+        "frontend/src/components/BrandLogo.tsx",
+        "frontend/src/components/EmptyStateHero.tsx"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Backend adds VoiceProfile/VoiceProfileId data structures and storage maps not described in the BuildRequest.",
+      "reason": "The BuildRequest only requests voice models and conversion jobs; VoiceProfile entities are additional unrequested domain objects.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "description": "Authorization system that requires initializing access control with a secret admin token from URL parameter (`caffeineAdminToken`) and permission checks via `AccessControl.hasPermission`.",
+      "reason": "The BuildRequest specifies Internet Identity for authentication and scoping by principal, but does not request an additional secret/token-based access control initialization mechanism.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/hooks/useActor.ts",
+        "frontend/src/utils/urlParams (referenced)"
+      ]
+    },
+    {
+      "description": "Footer branding/link to caffeine.ai and a heart symbol in the UI footer.",
+      "reason": "Not requested in any requirement; could be considered extra/unrelated branding content.",
+      "evidence": [
+        "frontend/src/components/AppLayout.tsx"
+      ]
+    }
+  ],
+  "confidence": 0.62,
+  "changed_files": [
+    "all_files_summary.json",
+    "backend/main.mo",
+    "frontend-file-summaries.txt",
+    "frontend/index.css",
+    "frontend/index.html",
+    "frontend/src/App.tsx",
+    "frontend/src/components/AppLayout.tsx",
+    "frontend/src/components/AppNav.tsx",
+    "frontend/src/components/AudioUploadAndSubmit.tsx",
+    "frontend/src/components/AuthGate.tsx",
+    "frontend/src/components/BrandLogo.tsx",
+    "frontend/src/components/EmptyStateHero.tsx",
+    "frontend/src/components/InlineAlert.tsx",
+    "frontend/src/components/JobStatusCard.tsx",
+    "frontend/src/components/JobsTable.tsx",
+    "frontend/src/components/LoginButton.tsx",
+    "frontend/src/components/ModelSelect.tsx",
+    "frontend/src/components/VoiceModelUploadForm.tsx",
+    "frontend/src/components/VoiceModelsList.tsx",
+    "frontend/src/hooks/useActor.ts",
+    "frontend/src/hooks/useConversionJobs.ts",
+    "frontend/src/hooks/useInternetIdentity.ts",
+    "frontend/src/hooks/useModelNameLookup.ts",
+    "frontend/src/hooks/useVoiceModels.ts",
+    "frontend/src/index.css",
+    "frontend/src/main.tsx",
+    "frontend/src/pages/CreateCoverPage.tsx",
+    "frontend/src/pages/JobsHistoryPage.tsx",
+    "frontend/src/pages/VoiceModelsPage.tsx",
+    "frontend/src/utils/downloadExternalBlob.ts",
+    "frontend/src/utils/fileToBytes.ts",
+    "frontend/src/utils/urlParams.ts",
+    "frontend/tailwind.config.js",
+    "project_state.json"
+  ]
+}
